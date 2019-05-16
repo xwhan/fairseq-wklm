@@ -19,16 +19,17 @@ from fairseq.data import data_utils
 class Dictionary(object):
     """A mapping from symbols to consecutive integers"""
 
-    def __init__(self, pad='<pad>', eos='</s>', unk='<unk>', bos='<s>'):
+    def __init__(self, pad='[PAD]', eos='[SEP]', unk='[UNK]', bos='[SEP]'):
         self.unk_word, self.pad_word, self.eos_word = unk, pad, eos
         self.symbols = []
         self.count = []
         self.indices = {}
-        self.bos_index = self.add_symbol(bos)
-        self.pad_index = self.add_symbol(pad)
-        self.eos_index = self.add_symbol(eos)
-        self.unk_index = self.add_symbol(unk)
-        self.nspecial = len(self.symbols)
+        #self.bos_index = self.add_symbol(bos)
+        #self.pad_index = self.add_symbol(pad)
+        #self.eos_index = self.add_symbol(eos)
+        #self.unk_index = self.add_symbol(unk)
+        #self.nspecial = len(self.symbols)
+        self._optimized = False
 
     def __eq__(self, other):
         return self.indices == other.indices
@@ -145,19 +146,23 @@ class Dictionary(object):
 
     def bos(self):
         """Helper to get index of beginning-of-sentence symbol"""
-        return self.bos_index
+        idx = self.add_symbol(self.bos_word)
+        return idx
 
     def pad(self):
         """Helper to get index of pad symbol"""
-        return self.pad_index
+        idx = self.add_symbol(self.pad_word)
+        return idx
 
     def eos(self):
         """Helper to get index of end-of-sentence symbol"""
-        return self.eos_index
+        idx = self.add_symbol(self.eos_word)
+        return idx
 
     def unk(self):
         """Helper to get index of unk symbol"""
-        return self.unk_index
+        idx = self.add_symbol(self.unk_word)
+        return idx
 
     @classmethod
     def load(cls, f, ignore_utf_errors=False):

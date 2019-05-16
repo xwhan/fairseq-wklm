@@ -29,32 +29,38 @@ class MaskedLMDictionary(Dictionary):
         """Helper to get index of mask symbol"""
         return self.mask_index
 
-
-class BertDictionary(MaskedLMDictionary):
+class BertDictionary(Dictionary):
     """
     Dictionary for BERT task. This extends MaskedLMDictionary by adding support
     for cls and sep symbols.
     """
     def __init__(
         self,
-        pad='<pad>',
-        eos='</s>',
-        unk='<unk>',
-        mask='<mask>',
-        cls='<cls>',
-        sep='<sep>'
+        pad='[PAD]',
+        unk='[UNK]',
+        cls='[CLS]',
+        mask='[MASK]',
+        sep='[SEP]'
     ):
-        super().__init__(pad, eos, unk, mask)
-        self.cls_word = cls
-        self.sep_word = sep
-        self.cls_index = self.add_symbol(cls)
-        self.sep_index = self.add_symbol(sep)
+        super().__init__(pad, unk)
+        (
+            self.cls_word,
+            self.mask_word,
+            self.sep_word
+        ) = cls, mask, sep
         self.nspecial = len(self.symbols)
 
     def cls(self):
         """Helper to get index of cls symbol"""
-        return self.cls_index
+        idx = self.add_symbol(self.cls_word)
+        return idx
 
     def sep(self):
         """Helper to get index of sep symbol"""
-        return self.sep_index
+        idx = self.add_symbol(self.sep_word)
+        return idx
+
+    def mask(self): 
+        """Helper to get index of sep symbol"""
+        idx = self.add_symbol(self.mask_word)
+        return idx

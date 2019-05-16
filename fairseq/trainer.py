@@ -75,6 +75,8 @@ class Trainer(object):
             self.meters['loss_scale'] = AverageMeter()  # dynamic loss scale
         self.meters['wall'] = TimeMeter()      # wall time in seconds
         self.meters['train_wall'] = StopwatchMeter()  # train wall time in seconds
+        if hasattr(self.task, 'extra_meters'):
+            self.meters['task'] = self.task.extra_meters()
 
     @property
     def model(self):
@@ -134,6 +136,7 @@ class Trainer(object):
 
         if os.path.exists(filename):
             state = checkpoint_utils.load_checkpoint_to_cpu(filename)
+            #import pdb; pdb.set_trace()
 
             # load model parameters
             try:
@@ -342,8 +345,8 @@ class Trainer(object):
                 ignore_results = False
 
             try:
-                _loss, sample_size, logging_output = self.task.valid_step(
-                    sample, self.model, self.criterion
+                _loss, sample_size, logging_output = self.task.get_loss(
+                    self.model, self.criterion, sample, is_valid=True
                 )
             except RuntimeError as e:
                 if 'out of memory' in str(e) and not raise_oom:
@@ -371,6 +374,12 @@ class Trainer(object):
             logging_output = [logging_output]
             sample_size = [sample_size]
 
+        # extra hacky!
+        if hasattr(self.task, 'aggregate_extra_metrics'):
+            extra_metrics = self.task.aggregate_extra_metrics(logging_output)
+        else:
+            extra_metrics = None
+
         # aggregate logging outputs and sample sizes
         logging_output = self.task.aggregate_logging_outputs(
             logging_output, self.criterion
@@ -378,6 +387,9 @@ class Trainer(object):
         sample_size = self.task.grad_denom(
             sample_size, self.criterion
         )
+
+        if extra_metrics is not None:
+            logging_output['extra_metrics'] = extra_metrics
 
         # update meters for validation
         ntokens = logging_output.get('ntokens', 0)
@@ -388,6 +400,10 @@ class Trainer(object):
 
         if 'nll_loss' in logging_output:
             self.meters['valid_nll_loss'].update(logging_output.get('nll_loss', 0), ntokens)
+        #import pdb;pdb.set_trace()
+        if 'extra_metrics' in logging_output:
+            for n, m in self.meters['task'].items():
+                m.update(*logging_output['extra_metrics'][n])
 
         return logging_output
 

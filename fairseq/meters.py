@@ -6,7 +6,7 @@
 # can be found in the PATENTS file in the same directory.
 
 import time
-
+import math
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -71,3 +71,49 @@ class StopwatchMeter(object):
     @property
     def avg(self):
         return self.sum / self.n
+
+
+
+class ClassificationMeter(object):
+    """Computes and stores the average and current value"""
+
+    def __init__(self, val_prefix=''):
+        self.val_prefix = val_prefix
+        self.reset()
+
+    def reset(self):
+        self.tp = 0
+        self.tn = 0
+        self.fp = 0
+        self.fn = 0
+        self.acc = 0
+        self.mcc = 0
+        self.precision = 0
+        self.recall = 0
+        self.f1 = 0
+
+    def update(self, tp, tn, fp, fn):
+        self.tp += tp
+        self.tn += tn
+        self.fp += fp
+        self.fn += fn
+        self.acc = (self.tp + self.tn) / ((self.tp + self.tn + self.fp + self.fn) or 1.0)
+        self.mcc = (self.tp * self.tn - self.fp * self.fn) / (math.sqrt(
+            (self.tp + self.fp) * (self.tp + self.fn) * (self.tn + self.fp) * (self.tn + self.fn)) or 1.0)
+        self.precision = self.tp / ((self.tp + self.fp) or 1.0)
+        self.recall = self.tp / ((self.tp + self.fn) or 1.0)
+        self.f1 = 2 * self.precision * self.recall / ((self.precision + self.recall) or 1.0)
+
+    def vals(self):
+        def attach_prefix(s):
+            return '{}_{}'.format(self.val_prefix, s) if len(self.val_prefix) > 0 else s
+        return [
+            (attach_prefix('tp'), self.tp),
+            (attach_prefix('tn'), self.tn),
+            (attach_prefix('fp'), self.fp),
+            (attach_prefix('fn'), self.fn),
+            (attach_prefix('acc'), self.acc),
+            (attach_prefix('mcc'), self.mcc),
+            (attach_prefix('f1'), self.f1),
+        ]
+

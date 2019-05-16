@@ -111,9 +111,8 @@ class MaskedLMTask(FairseqTask):
                         ds.sizes,
                         self.args.tokens_per_sample,
                         break_mode=self.args.break_mode,
-                        doc_break_size=1,
-                    )
-                )
+                        doc_break_size=0,
+                    ))
 
             print('| {} {} {} examples'.format(data_path, split_k, len(loaded_datasets[-1])))
 

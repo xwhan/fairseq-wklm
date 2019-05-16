@@ -233,25 +233,41 @@ def validate(args, trainer, task, epoch_itr, subsets):
             meter = trainer.get_meter(k)
             if meter is not None:
                 meter.reset()
+        task_meters = trainer.get_meter('task')
+        if task_meters is not None:
+            for m in task_meters.values():
+                m.reset()
         extra_meters = collections.defaultdict(lambda: AverageMeter())
 
+        misclassified = []
         for sample in progress:
             log_output = trainer.valid_step(sample)
 
             for k, v in log_output.items():
-                if k in ['loss', 'nll_loss', 'ntokens', 'nsentences', 'sample_size']:
+                if k in ['loss', 'nll_loss', 'ntokens', 'nsentences', 'sample_size', 'extra_metrics']:
                     continue
                 extra_meters[k].update(v)
+
+            if 'extra_metrics' in log_output and 'misclassified' in log_output['extra_metrics']:
+                misclassified += log_output['extra_metrics']['misclassified']
 
         # log validation stats
         stats = get_valid_stats(trainer)
         for k, meter in extra_meters.items():
             stats[k] = meter.avg
-        progress.print(stats, tag=subset, step=trainer.get_num_updates())
+
+        if task_meters is not None:
+            for _, m in task_meters.items():
+                for n, v in m.vals():
+                    stats[n] = v
+
+        progress.print(stats)
+
+        if len(misclassified) > 0:
+            print(misclassified, flush=True)
 
         valid_losses.append(stats['loss'].avg)
     return valid_losses
-
 
 def get_valid_stats(trainer):
     stats = collections.OrderedDict()
