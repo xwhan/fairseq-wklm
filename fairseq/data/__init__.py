@@ -25,6 +25,19 @@ from .transform_eos_dataset import TransformEosDataset
 from .transform_eos_lang_pair_dataset import TransformEosLangPairDataset
 from .sentence_classification_dataset import SentenceClassificationDataset
 from .sentence_pair_classification_dataset import SentencePairClassificationDataset
+from .multi_choice_qa_dataset import MultiChoiceQADataset
+from .squad_dataset import SquadDataset
+from .paragraph_ranking_dataset import ParagraphRankingDataset
+from .concat_sentences_dataset import ConcatSentencesDataset
+from .id_dataset import IdDataset
+from .nested_dictionary_dataset import NestedDictionaryDataset
+from .num_samples_dataset import NumSamplesDataset
+from .numel_dataset import NumelDataset
+from .offset_tokens_dataset import OffsetTokensDataset
+from .prepend_token_dataset import PrependTokenDataset
+from .raw_label_dataset import RawLabelDataset
+from .pad_dataset import RightPadDataset
+from .sort_dataset import SortDataset
 
 from .iterators import (
     CountingIterator,
@@ -59,4 +72,20 @@ __all__ = [
     'TransformEosDataset',
     'TransformEosLangPairDataset',
     'TruncatedDictionary',
+    'SentencePairClassificationDataset',
+    'SentenceClassificationDataset',
+    'MultiChoiceQADataset',
+    'IndexedInMemoryDataset',
+    'SquadDataset',
+    'ParagraphRankingDataset',
+    'IdDataset',
+    'NestedDictionaryDataset',
+    'NumSamplesDataset',
+    'OffsetTokensDataset',
+    'NumelDataset',
+    'PrependTokenDataset',
+    'RawLabelDataset',
+    'RightPadDataset',
+    'SortDataset',
+    'ConcatSentencesDataset'
 ]

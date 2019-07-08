@@ -28,7 +28,11 @@ class Dictionary(object):
         #self.pad_index = self.add_symbol(pad)
         #self.eos_index = self.add_symbol(eos)
         #self.unk_index = self.add_symbol(unk)
-        #self.nspecial = len(self.symbols)
+        self.bos_index = None
+        self.pad_index = None
+        self.eos_index = None
+        self.unk_index = None
+        self.nspecial = len(self.symbols)
         self._optimized = False
 
     def __eq__(self, other):
@@ -200,6 +204,10 @@ class Dictionary(object):
             d.indices[word] = len(d.symbols)
             d.symbols.append(word)
             d.count.append(count)
+
+        d.pad_index = d.pad()
+        d.eos_index = d.eos()
+        d.unk_index = d.unk()
         return d
 
     def _save(self, f, kv_iterator):
@@ -232,7 +240,7 @@ class Dictionary(object):
         if reverse_order:
             words = list(reversed(words))
         nwords = len(words)
-        ids = torch.IntTensor(nwords + 1 if append_eos else nwords)
+        ids = torch.LongTensor(nwords + 1 if append_eos else nwords)
 
         for i, word in enumerate(words):
             if add_if_not_exist:

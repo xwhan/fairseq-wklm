@@ -27,13 +27,13 @@ class BlockPairDataset(FairseqDataset):
         sizes: array of sentence lengths
         dictionary: dictionary for the task
         block_size: maximum block size
-        break_mode: mode for breaking copurs into block pairs. currently we support
-            2 modes
-            doc: respect document boundaries and each part of the pair should belong to on document
-            none: don't respect any boundary and cut tokens evenly
+        break_mode: strategy for breaking tokens into block pairs. Can be:
+            - doc: respect document boundaries and each part of the pair should
+                belong to one document
+            - none: don't respect any boundary and cut tokens evenly
         short_seq_prob: probability for generating shorter block pairs
-        doc_break_size: Size for empty line separating documents. Typically 1 if
-                        the sentences have eos, 0 otherwise.
+        doc_break_size: document separator size. Typically 1 if the sentences
+            have eos and 0 otherwise.
     """
 
     def __init__(

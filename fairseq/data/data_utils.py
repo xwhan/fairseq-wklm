@@ -8,7 +8,10 @@
 import contextlib
 import os
 import numpy as np
-from collections import Iterable
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 
 
 def infer_language_pair(path):
@@ -21,7 +24,7 @@ def infer_language_pair(path):
     return src, dst
 
 
-def collate_tokens(values, pad_idx, eos_idx, left_pad, move_eos_to_beginning=False):
+def collate_tokens(values, pad_idx, eos_idx=None, left_pad=False, move_eos_to_beginning=False):
     """Convert a list of 1d tensors into a padded 2d tensor."""
     size = max(v.size(0) for v in values)
     res = values[0].new(len(values), size).fill_(pad_idx)
@@ -41,12 +44,14 @@ def collate_tokens(values, pad_idx, eos_idx, left_pad, move_eos_to_beginning=Fal
 
 
 @contextlib.contextmanager
-def numpy_seed(seed):
+def numpy_seed(seed, *addl_seeds):
     """Context manager which seeds the NumPy PRNG with the specified seed and
     restores the state afterward"""
     if seed is None:
         yield
         return
+    if len(addl_seeds) > 0:
+        seed = int(hash((seed, *addl_seeds)) % 1e6)
     state = np.random.get_state()
     np.random.seed(seed)
     try:
@@ -85,6 +90,7 @@ def filter_by_size(indices, size_fn, max_positions, raise_exception=False):
             any elements are filtered (default: False).
     """
     def check_size(idx):
+        return True
         if isinstance(max_positions, float) or isinstance(max_positions, int):
             return size_fn(idx) <= max_positions
         elif isinstance(max_positions, dict):
