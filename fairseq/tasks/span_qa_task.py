@@ -22,6 +22,8 @@ from . import FairseqTask, register_task
 
 from fairseq.data.masked_lm_dictionary import BertDictionary
 
+from fairseq.tokenization import BertTokenizer
+
 
 @register_task('span_qa')
 class SpanQATask(FairseqTask):
@@ -50,6 +52,7 @@ class SpanQATask(FairseqTask):
         super().__init__(args)
         self.dictionary = dictionary
         self.valid_groups = ('classification_start', 'classification_end')
+        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
 
     @classmethod
     def setup_task(cls, args, **kwargs):

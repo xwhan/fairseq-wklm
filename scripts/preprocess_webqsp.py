@@ -126,15 +126,15 @@ def webqsp(data_folder='/private/home/xwhan/dataset/webqsp/full'):
                     doc_tokens[-1] += c
                 prev_is_whitespace = False
             char_to_word_offset.append(len(doc_tokens) - 1)
-            orig_to_tok_index = []
-            tok_to_orig_index = []
-            all_doc_tokens = []
-            for (i, token) in enumerate(doc_tokens):
-                orig_to_tok_index.append(len(all_doc_tokens))
-                sub_tokens = process(token, tokenizer) # wordpiece tokens
-                for sub_token in sub_tokens:
-                    tok_to_orig_index.append(i)
-                    all_doc_tokens.append(sub_token)
+        orig_to_tok_index = []
+        tok_to_orig_index = []
+        all_doc_tokens = []
+        for (i, token) in enumerate(doc_tokens):
+            orig_to_tok_index.append(len(all_doc_tokens))
+            sub_tokens = process(token, tokenizer) # wordpiece tokens
+            for sub_token in sub_tokens:
+                tok_to_orig_index.append(i)
+                all_doc_tokens.append(sub_token)
 
         q = process(item['question'], tokenizer)
         answer_start = []
