@@ -93,7 +93,6 @@ class MaskedLMTask(FairseqTask):
             ds = indexed_dataset.make_dataset(
                 path,
                 impl=self.args.dataset_impl,
-                fix_lua_indexing=True,
                 dictionary=self.dictionary,
             )
 

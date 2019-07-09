@@ -116,7 +116,7 @@ class MaskedLMModel(BaseFairseqModel):
         if not hasattr(args, 'max_positions'):
             args.max_positions = args.tokens_per_sample
 
-        print("Model args: ", args)
+        # utils.print_args(args)
 
         encoder = MaskedLMEncoder(args, task.dictionary)
         return cls(args, encoder)
@@ -172,6 +172,7 @@ class MaskedLMEncoder(FairseqEncoder):
         self.activation_fn = utils.get_activation_fn(args.activation_fn)
         self.layer_norm = LayerNorm(args.encoder_embed_dim)
 
+        self.lm_output_learned_bias = None
         if self.load_softmax:
             self.lm_output_learned_bias = nn.Parameter(torch.zeros(self.vocab_size))
 
@@ -227,7 +228,8 @@ class MaskedLMEncoder(FairseqEncoder):
         elif self.embed_out is not None:
             x = self.embed_out(x)
 
-        x = x + self.lm_output_learned_bias
+        if self.lm_output_learned_bias:
+            x = x + self.lm_output_learned_bias
         sentence_logits = None
         if self.sentence_projection_layer:
             sentence_logits = self.sentence_projection_layer(pooled_output)
@@ -252,7 +254,7 @@ class MaskedLMEncoder(FairseqEncoder):
             ] = torch.FloatTensor(1)
         if not self.load_softmax:
             for k in list(state_dict.keys()):
-                if "embed_out.weight" in k or "sentence_projection_layer.weight" in k:
+                if "embed_out.weight" in k or "sentence_projection_layer.weight" in k or "lm_output_learned_bias" in k:
                     del state_dict[k]
         return state_dict
 

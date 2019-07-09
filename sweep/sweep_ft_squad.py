@@ -19,46 +19,36 @@ def get_filter_str(val):
     s = f'cf{f[0][1]}'
     return s
 
-
-max_update = 33135*4
-
+max_update=30500
 def get_grid(args):
     return [
-
         hyperparam('--save-interval', 1),
         hyperparam('--no-epoch-checkpoints'),
-        #hyperparam('--warmup', 0.1),
-
-        hyperparam('--arch', 'finetuning_sentence_pair_classifier', save_dir_key=lambda val: val),
-        hyperparam('--task', 'sentence_pair_classification'),
-
+        hyperparam('--warmup', 0.1),
+        hyperparam('--arch', 'finetuning_squad', save_dir_key=lambda val: val),
+        hyperparam('--task', 'squad'),
         hyperparam('--max-update', [
             max_update
         ], save_dir_key=lambda val: f'mxup{val}'),
-        hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
+        hyperparam('--data-file' ,'/private/home/yinhanliu/data/squad_bert/dev-v1.1.json'),
+        hyperparam('--optimizer', 'bert_adam', save_dir_key=lambda val: val),
         hyperparam('--lr', [
-           1e-05,2e-05,3e-05
+          3e-05, 2e-05
         ], save_dir_key=lambda val: f'lr{val}'),
-        #hyperparam('--t-total', max_update),
-        hyperparam('--bert-path', '/checkpoint/ves/2019-06-02/mlm-big-normalbsz-bookwiki.st512.mt2048.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt',
+        hyperparam('--t-total', max_update),
+        hyperparam('--bert-path','/checkpoint/yinhanliu/20190322/hf_bert_implement/bert512.eps-06_0.0002/checkpoint_best.pt',
             save_dir_key=lambda val: f'bert'),
 
-        hyperparam('--min-lr', 1e-9),
-        hyperparam('--criterion', ['cross_entropy'], save_dir_key=lambda val: f'crs_ent'),
-        hyperparam('--sentence-avg', True, binary_flag=True),
-        hyperparam('--num-labels', 3),
+        hyperparam('--criterion', ['squad'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--max-tokens', [
             1334,
         ], save_dir_key=lambda val: f'mxtk{val}'),
-
-        hyperparam('--seed', [3, 6], save_dir_key=lambda val: f'seed{val}'),
-
+        hyperparam('--seed', [3,4,5,6], save_dir_key=lambda val: f'seed{val}'),
         hyperparam('--skip-invalid-size-inputs-valid-test'),
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', [500]),
-
-        hyperparam('--model-dim', 1024),
-        #hyperparam('--mnli-dropout', [0.1], save_dir_key=lambda val: f'f_drp{val}'),
+        hyperparam('--min-lr', 1e-09),
+        hyperparam('--model-dim', 768),
     ]
 
 

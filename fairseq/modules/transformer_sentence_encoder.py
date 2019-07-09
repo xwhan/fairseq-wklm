@@ -112,16 +112,14 @@ class TransformerSentenceEncoder(nn.Module):
             else None
         )
 
-        self.embed_positions = (
-            PositionalEmbedding(
-                self.max_seq_len,
-                self.embedding_dim,
-                self.padding_idx,
-                learned=self.learned_pos_embedding,
-            )
-            if self.use_position_embeddings
-            else None
-        )
+        self.embed_positions = PositionalEmbedding(
+               self.max_seq_len,
+               self.embedding_dim,
+               self.padding_idx,
+               learned=self.learned_pos_embedding,
+           ) if self.use_position_embeddings else None
+
+        # self.embed_positions =  nn.Embedding(self.max_seq_len, self.embedding_dim)
 
         self.layers = nn.ModuleList(
             [
@@ -161,12 +159,18 @@ class TransformerSentenceEncoder(nn.Module):
         if not padding_mask.any():
             padding_mask = None
 
+
         x = self.embed_tokens(tokens)
         if self.embed_scale is not None:
             x *= self.embed_scale
 
         if self.embed_positions is not None:
-            x += self.embed_positions(tokens)
+            #x += self.embed_positions(tokens)
+            seq_length = tokens.size(1)
+            position_ids = torch.arange(seq_length, dtype=torch.long, device=tokens.device)
+            position_ids = position_ids.unsqueeze(0).expand_as(tokens)
+            x += self.embed_positions(position_ids)
+
 
         if self.segment_embeddings is not None and segment_labels is not None:
             x += self.segment_embeddings(segment_labels)

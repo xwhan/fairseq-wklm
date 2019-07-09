@@ -9,21 +9,24 @@ from functools import reduce
 import itertools
 import numpy as np
 import os
+import json
+from tqdm import tqdm
 
-from torch.utils.data import ConcatDataset
 
 from fairseq.data import (
     Dictionary, IndexedCachedDataset, IndexedRawTextDataset,
-    SentenceClassificationDataset, TokenBlockDataset,
+    MultiChoiceQADataset, TokenBlockDataset,
     IndexedDataset)
 from fairseq.meters import ClassificationMeter
 
 from . import FairseqTask, register_task
 from fairseq.data.masked_lm_dictionary import BertDictionary
 
+from fairseq.tokenization import BertTokenizer
 
-@register_task('sentence_classification')
-class SentenceClassificationTask(FairseqTask):
+
+@register_task('multi_choice_qa')
+class MultiChoiceQATask(FairseqTask):
     """
     Classify a sentence
     Args:
@@ -50,6 +53,7 @@ class SentenceClassificationTask(FairseqTask):
         self.dictionary = dictionary
         self.padding_idx = -100
         self.num_labels = args.num_labels
+        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -68,51 +72,35 @@ class SentenceClassificationTask(FairseqTask):
             split (str): name of the split (e.g., train, valid, test)
         """
 
-        loaded_datasets = []
+        raw_data = json.load(open(os.path.join(self.args.data, '{}.json'.format(split))))
         loaded_labels = []
+        dataset = []
+        sizes = []
+        print('Processing raw {} data ...'.format(split))
 
-        for k in itertools.count():
-            split_k = split + (str(k) if k > 0 else '')
-            path = os.path.join(self.args.data, split_k)
+        for item in raw_data:
+            for choice in item['choices']:
+                refer_doc_sent = choice['refer_doc']
+                ques_sent = choice['question']
+                choice_sent = choice['choice']
+                label = choice['correct']
 
-            if self.args.raw_text and IndexedRawTextDataset.exists(path):
-                ds = IndexedRawTextDataset(path, self.dictionary)
-            elif not self.args.raw_text and IndexedDataset.exists(path):
-                if self.args.lazy_load:
-                    ds = IndexedDataset(path)
-                else:
-                    ds = IndexedCachedDataset(path)
-            else:
-                if k > 0:
-                    break
-                else:
-                    raise FileNotFoundError('Dataset not found: {} ({})'.format(split, self.args.data))
+                refer_doc_idx = self.dictionary.encode_line(refer_doc_sent, line_tokenizer=self.tokenizer.tokenize, append_eos=False)
+                ques_idx = self.dictionary.encode_line(ques_sent, line_tokenizer=self.tokenizer.tokenize, append_eos=False)
+                choice_idx = self.dictionary.encode_line(choice_sent, line_tokenizer=self.tokenizer.tokenize, append_eos=False)
 
-            loaded_datasets.append(
-                TokenBlockDataset(
-                    ds, ds.sizes, 0, pad=self.dictionary.pad(),
-                    break_mode='eos', include_targets=False, eos=self.dictionary.eos(),
-                ))
+                 # 4 for special tokens
+                if len(refer_doc_idx.tolist() + ques_idx.tolist() + choice_idx.tolist()) + 4 > 512:
+                    extra_len = len(refer_doc_idx.tolist() + ques_idx.tolist() + choice_idx.tolist()) + 4 - 512
+                    refer_doc_idx = refer_doc_idx[:-extra_len]
 
-            with open(path + '.lbl', 'r') as lbl_f:
-                lines = lbl_f.readlines()
-                loaded_labels.extend(int(l) for l in lines)
+                dataset.append({"refer": refer_doc_idx, "q": ques_idx, "choice": choice_idx})
+                loaded_labels.append(label)
+                sizes.append(len(refer_doc_idx.tolist() + ques_idx.tolist() + choice_idx.tolist()))
 
-            print('| {} {} {} examples'.format(self.args.data, split_k, len(loaded_datasets[-1])))
-
-            if not combine:
-                break
-
-        if len(loaded_datasets) == 1:
-            dataset = loaded_datasets[0]
-            sizes = dataset.sizes
-        else:
-            dataset = ConcatDataset(loaded_datasets)
-            sizes = np.concatenate([ds.sizes for ds in loaded_datasets])
-
-        self.datasets[split] = SentenceClassificationDataset(
-            dataset, loaded_labels, sizes, self.dictionary,
-        )
+        self.datasets[split] = MultiChoiceQADataset(
+            dataset, loaded_labels, sizes, self.dictionary, True if split == 'train' else False
+            )
 
     def extra_meters(self):
         return {

@@ -37,10 +37,10 @@ def get_grid(args):
         ], save_dir_key=lambda val: f'mxup{val}'),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
         hyperparam('--lr', [
-           1e-05,2e-05,3e-05
+           1e-05,2e-05
         ], save_dir_key=lambda val: f'lr{val}'),
         #hyperparam('--t-total', max_update),
-        hyperparam('--bert-path', '/checkpoint/ves/2019-06-02/mlm-big-normalbsz-bookwiki.st512.mt2048.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt',
+        hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',
             save_dir_key=lambda val: f'bert'),
 
         hyperparam('--min-lr', 1e-9),
@@ -57,7 +57,7 @@ def get_grid(args):
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', [500]),
 
-        hyperparam('--model-dim', 1024),
+        hyperparam('--model-dim', 768),
         #hyperparam('--mnli-dropout', [0.1], save_dir_key=lambda val: f'f_drp{val}'),
     ]
 

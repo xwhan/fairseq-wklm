@@ -4,16 +4,12 @@
 # This source code is licensed under the license found in the LICENSE file in
 # the root directory of this source tree. An additional grant of patent rights
 # can be found in the PATENTS file in the same directory.
-
-from functools import lru_cache
 import os
 import shutil
 import struct
 
 import numpy as np
 import torch
-
-from . import FairseqDataset
 
 
 def make_builder(out_file, impl):
@@ -82,7 +78,7 @@ def data_file_path(prefix_path):
     return prefix_path + '.bin'
 
 
-class IndexedDataset(FairseqDataset):
+class IndexedDataset(torch.utils.data.Dataset):
     """Loader for TorchNet IndexedDataset"""
 
     def __init__(self, path, fix_lua_indexing=False):
@@ -103,23 +99,22 @@ class IndexedDataset(FairseqDataset):
             assert struct.unpack('<Q', version) == (1,)
             code, self.element_size = struct.unpack('<QQ', f.read(16))
             self.dtype = dtypes[code]
-            self._len, self.s = struct.unpack('<QQ', f.read(16))
-            self.dim_offsets = read_longs(f, self._len + 1)
-            self.data_offsets = read_longs(f, self._len + 1)
+            self.size, self.s = struct.unpack('<QQ', f.read(16))
+            self.dim_offsets = read_longs(f, self.size + 1)
+            self.data_offsets = read_longs(f, self.size + 1)
             self.sizes = read_longs(f, self.s)
 
     def read_data(self, path):
         self.data_file = open(data_file_path(path), 'rb', buffering=0)
 
     def check_index(self, i):
-        if i < 0 or i >= self._len:
+        if i < 0 or i >= self.size:
             raise IndexError('index out of range')
 
     def __del__(self):
         if self.data_file:
             self.data_file.close()
 
-    @lru_cache(maxsize=8)
     def __getitem__(self, i):
         if not self.data_file:
             self.read_data(self.path)
@@ -134,13 +129,7 @@ class IndexedDataset(FairseqDataset):
         return item
 
     def __len__(self):
-        return self._len
-
-    def num_tokens(self, index):
-        return self.sizes[index]
-
-    def size(self, index):
-        return self.sizes[index]
+        return self.size
 
     @staticmethod
     def exists(path):
@@ -188,7 +177,6 @@ class IndexedCachedDataset(IndexedDataset):
             self.data_file.close()
             self.data_file = None
 
-    @lru_cache(maxsize=8)
     def __getitem__(self, i):
         self.check_index(i)
         tensor_size = self.sizes[self.dim_offsets[i]:self.dim_offsets[i + 1]]
@@ -201,7 +189,7 @@ class IndexedCachedDataset(IndexedDataset):
         return item
 
 
-class IndexedRawTextDataset(FairseqDataset):
+class IndexedRawTextDataset(torch.utils.data.Dataset):
     """Takes a text file as input and binarizes it in memory at instantiation.
     Original lines are also kept in memory"""
 
@@ -243,12 +231,6 @@ class IndexedRawTextDataset(FairseqDataset):
 
     def __len__(self):
         return self.size
-
-    def num_tokens(self, index):
-        return self.sizes[index]
-
-    def size(self, index):
-        return self.sizes[index]
 
     @staticmethod
     def exists(path):
@@ -430,7 +412,6 @@ class MMapIndexedDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self._index)
 
-    @lru_cache(maxsize=8)
     def __getitem__(self, i):
         ptr, size = self._index[i]
         tensor = torch.from_numpy(np.frombuffer(self._bin_buffer, dtype=self._index.dtype, count=size, offset=ptr))

@@ -9,21 +9,24 @@ from functools import reduce
 import itertools
 import numpy as np
 import os
+import json
+from tqdm import tqdm
 
-from torch.utils.data import ConcatDataset
 
 from fairseq.data import (
     Dictionary, IndexedCachedDataset, IndexedRawTextDataset,
-    SentenceClassificationDataset, TokenBlockDataset,
+    ParagraphRankingDataset, TokenBlockDataset,
     IndexedDataset)
 from fairseq.meters import ClassificationMeter
 
 from . import FairseqTask, register_task
 from fairseq.data.masked_lm_dictionary import BertDictionary
 
+from fairseq.tokenization import BertTokenizer
 
-@register_task('sentence_classification')
-class SentenceClassificationTask(FairseqTask):
+
+@register_task('paragaph_ranking')
+class ParagraphRankingTask(FairseqTask):
     """
     Classify a sentence
     Args:
@@ -50,6 +53,7 @@ class SentenceClassificationTask(FairseqTask):
         self.dictionary = dictionary
         self.padding_idx = -100
         self.num_labels = args.num_labels
+        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -68,51 +72,34 @@ class SentenceClassificationTask(FairseqTask):
             split (str): name of the split (e.g., train, valid, test)
         """
 
-        loaded_datasets = []
+        raw_data = open(os.path.join(self.args.data, '{}.json'.format(split))).readlines()
         loaded_labels = []
+        dataset = []
+        sizes = []
+        print('Processing raw {} data ...'.format(split))
 
-        for k in itertools.count():
-            split_k = split + (str(k) if k > 0 else '')
-            path = os.path.join(self.args.data, split_k)
+        for item in tqdm(raw_data):
+            item = json.loads(item)
+            ques_sent = item['q']
+            para_sent = item['para']
+            label = int(item['label'])
 
-            if self.args.raw_text and IndexedRawTextDataset.exists(path):
-                ds = IndexedRawTextDataset(path, self.dictionary)
-            elif not self.args.raw_text and IndexedDataset.exists(path):
-                if self.args.lazy_load:
-                    ds = IndexedDataset(path)
-                else:
-                    ds = IndexedCachedDataset(path)
-            else:
-                if k > 0:
-                    break
-                else:
-                    raise FileNotFoundError('Dataset not found: {} ({})'.format(split, self.args.data))
+            loaded_labels.append(label)
 
-            loaded_datasets.append(
-                TokenBlockDataset(
-                    ds, ds.sizes, 0, pad=self.dictionary.pad(),
-                    break_mode='eos', include_targets=False, eos=self.dictionary.eos(),
-                ))
+            ques_sent_idx = self.dictionary.encode_line(ques_sent.lower(), line_tokenizer=self.tokenizer.tokenize, append_eos=False, add_if_not_exist=False)
+            para_sent_idx = self.dictionary.encode_line(para_sent.lower(), line_tokenizer=self.tokenizer.tokenize, append_eos=False, add_if_not_exist=False)
 
-            with open(path + '.lbl', 'r') as lbl_f:
-                lines = lbl_f.readlines()
-                loaded_labels.extend(int(l) for l in lines)
+            if len(para_sent_idx.tolist() + ques_sent_idx.tolist()) + 3 > 512:
+                extra_len = len(para_sent_idx.tolist() + ques_sent_idx.tolist()) + 3 - 512
+                para_sent_idx = para_sent_idx[:-extra_len]
 
-            print('| {} {} {} examples'.format(self.args.data, split_k, len(loaded_datasets[-1])))
+            dataset.append({'q': ques_sent_idx, 'para': para_sent_idx})
+            sizes.append(len(para_sent_idx.tolist() + ques_sent_idx.tolist()))
 
-            if not combine:
-                break
 
-        if len(loaded_datasets) == 1:
-            dataset = loaded_datasets[0]
-            sizes = dataset.sizes
-        else:
-            dataset = ConcatDataset(loaded_datasets)
-            sizes = np.concatenate([ds.sizes for ds in loaded_datasets])
-
-        self.datasets[split] = SentenceClassificationDataset(
-            dataset, loaded_labels, sizes, self.dictionary,
-        )
+        self.datasets[split] = ParagraphRankingDataset(
+            dataset, loaded_labels, sizes, self.dictionary, True if split == 'train' else False
+            )
 
     def extra_meters(self):
         return {

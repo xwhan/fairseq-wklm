@@ -314,3 +314,10 @@ def get_activation_fn(activation: str) -> Callable:
         return F.tanh
     else:
         raise RuntimeError(f"--activation-fn {activation} not supported")
+
+def print_args(args):
+    args_dict = vars(args)
+    print('\n' + '-'  * 10 + 'arguments' + '-'*10)
+    for k, v in args_dict.items():
+        print(k, ': ', v)
+    print('-'  * 10 + 'arguments' + '-'*10 + '\n')

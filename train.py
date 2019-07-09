@@ -36,20 +36,20 @@ def main(args, init_distributed=False):
         args.distributed_rank = distributed_utils.distributed_init(args)
 
     # Print args
-    print(args)
+    utils.print_args(args)
 
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
 
     # Load dataset splits
-    task.load_dataset(args.train_subset, combine=True, epoch=0)
+    task.load_dataset(args.train_subset, combine=True)
     for valid_sub_split in args.valid_subset.split(','):
-        task.load_dataset(valid_sub_split, combine=True, epoch=0)
+        task.load_dataset(valid_sub_split, combine=True)
 
     # Build model and criterion
     model = task.build_model(args)
     criterion = task.build_criterion(args)
-    print(model)
+    # print(model)
     print('| model {}, criterion {}'.format(args.arch, criterion.__class__.__name__))
     print('| num. model params: {} (num. trained: {})'.format(
         sum(p.numel() for p in model.parameters()),
@@ -234,6 +234,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
             if meter is not None:
                 meter.reset()
         task_meters = trainer.get_meter('task')
+
         if task_meters is not None:
             for m in task_meters.values():
                 m.reset()

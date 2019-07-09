@@ -5,9 +5,6 @@
 # the root directory of this source tree. An additional grant of patent rights
 # can be found in the PATENTS file in the same directory.
 
-import math
-
-import torch
 import torch.nn as nn
 
 from fairseq.tasks.masked_lm import MaskedLMTask
@@ -17,8 +14,8 @@ from . import (
 
 from fairseq import checkpoint_utils
 
-@register_model('finetuning_sentence_classifier')
-class FinetuningSentenceClassifier(BaseFairseqModel):
+@register_model('finetuning_paragraph_ranker')
+class ParagraphRanker(BaseFairseqModel):
     def __init__(self, args, pretrain_model):
         super().__init__()
 
@@ -68,9 +65,9 @@ class FinetuningSentenceClassifier(BaseFairseqModel):
         [args.bert_path], arg_overrides={'remove_head': True}, task=task)
         assert len(models) == 1, 'ensembles are currently not supported for elmo embeddings'
 
-        return FinetuningSentenceClassifier(args, models[0])
+        return ParagraphRanker(args, models[0])
 
-@register_model_architecture('finetuning_sentence_classifier', 'finetuning_sentence_classifier')
+@register_model_architecture('finetuning_paragraph_ranker', 'finetuning_paragraph_ranker')
 def base_architecture_ft(args):
     args.model_dim = getattr(args, 'model_dim', 768)
     args.last_dropout = getattr(args, 'last_dropout', 0.4)

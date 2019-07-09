@@ -37,10 +37,10 @@ def get_grid(args):
         ], save_dir_key=lambda val: f'mxup{val}'),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
         hyperparam('--lr', [
-           1e-05,2e-05
+           1e-05,2e-05,5e-5
         ], save_dir_key=lambda val: f'lr{val}'),
         #hyperparam('--t-total', max_update),
-        hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-10/masked-lm-bert-base-bookwiki.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip0.0.clip6e-06.lr4e-05.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_last.pt',
+        hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-23/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_23_1000000.pt',
             save_dir_key=lambda val: f'bert'),
 
         hyperparam('--min-lr', 1e-9),

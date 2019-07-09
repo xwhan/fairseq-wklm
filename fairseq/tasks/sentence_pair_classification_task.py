@@ -89,9 +89,9 @@ class SentencePairClassificationTask(FairseqTask):
                     ds = IndexedRawTextDataset(path, self.dictionary)
                 elif not self.args.raw_text and IndexedDataset.exists(path):
                     if self.args.lazy_load:
-                        ds = IndexedDataset(path, fix_lua_indexing=True)
+                        ds = IndexedDataset(path)
                     else:
-                        ds = IndexedCachedDataset(path, fix_lua_indexing=True)
+                        ds = IndexedCachedDataset(path)
                 else:
                     if k > 0:
                         stop = True

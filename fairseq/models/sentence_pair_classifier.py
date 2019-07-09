@@ -32,7 +32,7 @@ class FinetuningSentencePairClassifier(BaseFairseqModel):
 
     def forward(self, sentence, segment_labels):
         _, x = self.pretrain_model(sentence, segment_labels)
-        x = x['sentence_rep']
+        x = x['pooled_output']
         x = self.final_dropout(x)
         x = self.proj(x)
         return x

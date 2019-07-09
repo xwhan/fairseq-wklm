@@ -1,6 +1,8 @@
 # JetBrains PyCharm IDE
 .idea/
 
+vocab_dicts/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

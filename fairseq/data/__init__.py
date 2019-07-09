@@ -38,6 +38,7 @@ from .prepend_token_dataset import PrependTokenDataset
 from .raw_label_dataset import RawLabelDataset
 from .pad_dataset import RightPadDataset
 from .sort_dataset import SortDataset
+from .spanqa_dataset import SpanQADataset
 
 from .iterators import (
     CountingIterator,
@@ -87,5 +88,6 @@ __all__ = [
     'RawLabelDataset',
     'RightPadDataset',
     'SortDataset',
-    'ConcatSentencesDataset'
+    'ConcatSentencesDataset',
+    'SpanQADataset'
 ]

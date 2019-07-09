@@ -29,24 +29,23 @@ def get_grid(args):
         hyperparam('--no-epoch-checkpoints'),
         #hyperparam('--warmup', 0.1),
 
-        hyperparam('--arch', 'finetuning_sentence_pair_classifier', save_dir_key=lambda val: val),
-        hyperparam('--task', 'sentence_pair_classification'),
+        hyperparam('--arch', 'finetuning_sentence_classifier', save_dir_key=lambda val: val),
+        hyperparam('--task', 'multi_choice_qa'),
 
         hyperparam('--max-update', [
             max_update
         ], save_dir_key=lambda val: f'mxup{val}'),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
         hyperparam('--lr', [
-           1e-05,2e-05,3e-05
+           1e-05,2e-05
         ], save_dir_key=lambda val: f'lr{val}'),
         #hyperparam('--t-total', max_update),
-        hyperparam('--bert-path', '/checkpoint/ves/2019-06-02/mlm-big-normalbsz-bookwiki.st512.mt2048.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt',
-            save_dir_key=lambda val: f'bert'),
+        hyperparam('--bert-path', '/checkpoint/myleott/2019-06-01/bookwiki_aml_CC-NEWS-en.v7.1.noactdrop.st512.ms4.mt2200.uf16.masked_lm.no_nsp.bert_large.gelu.dr0.1.atdr0.1.atdr0.0.wd0.01.adam.beta2_98.eps1e-06.clip0.0.lr0.0005.warm10000.me_fp16.mu100000.seed1.ngpu128/checkpoint_18_100000.pt', save_dir_key=lambda val: f'bert'),
 
         hyperparam('--min-lr', 1e-9),
         hyperparam('--criterion', ['cross_entropy'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--sentence-avg', True, binary_flag=True),
-        hyperparam('--num-labels', 3),
+        hyperparam('--num-label', 2),
         hyperparam('--max-tokens', [
             1334,
         ], save_dir_key=lambda val: f'mxtk{val}'),
@@ -57,7 +56,7 @@ def get_grid(args):
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', [500]),
 
-        hyperparam('--model-dim', 1024),
+        hyperparam('--model-dim', 768),
         #hyperparam('--mnli-dropout', [0.1], save_dir_key=lambda val: f'f_drp{val}'),
     ]
 

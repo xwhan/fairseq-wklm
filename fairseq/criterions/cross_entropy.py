@@ -28,6 +28,10 @@ class CrossEntropyCriterion(FairseqCriterion):
         2) the sample size, which is used as the denominator for the gradient
         3) logging outputs to display while training
         """
+
+        if sample['net_input']['sentence'].size(1) > 512:
+            assert False
+
         net_output = model(**sample['net_input'])
         loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
         #import pdb; pdb.set_trace()

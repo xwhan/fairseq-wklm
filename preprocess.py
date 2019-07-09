@@ -24,7 +24,7 @@ import shutil
 def main(args):
     utils.import_user_module(args)
 
-    print(args)
+    utils.print_args(args)
 
     os.makedirs(args.destdir, exist_ok=True)
     target = not args.only_source
