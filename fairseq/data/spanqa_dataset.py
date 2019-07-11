@@ -98,6 +98,10 @@ class SpanQADataset(FairseqDataset):
             start_position = min(s, paragraph.size(0) - 1) + question_len
             end_position = min(e, paragraph.size(0) - 1) + question_len
 
+        # fix binarize error
+        question = question - 1
+        paragraph = paragraph - 1
+
         start_position = torch.LongTensor([start_position])
         end_position = torch.LongTensor([end_position])
         text, seg = self._join_sents(question, paragraph)
@@ -119,6 +123,15 @@ class SpanQADataset(FairseqDataset):
         segment2 = torch.ones(sent2.size(0)).long()
         segment = torch.cat([segment1, segment2])
         return text, segment
+
+    def debinarize_list(self, indices):
+        return [self.vocab[idx] for idx in indices]
+
+    def binarize_list(self, words):
+        """
+        binarize tokenized sequence
+        """
+        return [self.vocab.index(w) for w in words]
 
     def __len__(self):
         return len(self.dataset1)

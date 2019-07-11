@@ -78,6 +78,7 @@ def main(args):
     else:
         if args.srcdict:
             src_dict = task.load_dictionary(args.srcdict)
+            print('| get dictionary: {} types from {}'.format(len(src_dict), args.srcdict))
         else:
             assert args.trainpref, "--trainpref must be set if --srcdict is not specified"
             src_dict = build_dictionary([train_path(args.source_lang)], src=True)
@@ -96,7 +97,7 @@ def main(args):
         tgt_dict.save(dict_path(args.target_lang))
 
     def make_binary_dataset(vocab, input_prefix, output_prefix, lang, num_workers):
-        print("| [{}] Dictionary: {} types".format(lang, len(vocab) - 1))
+        print("| Make Binary [{}] Dictionary: {} types".format(lang, len(vocab) - 1))
         n_seq_tok = [0, 0]
         replaced = Counter()
 
@@ -230,7 +231,7 @@ def main(args):
                 print("{} {}".format(src_dict[k], tgt_dict[v]), file=f)
 
 
-def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=True):
+def binarize(args, filename, vocab, output_prefix, lang, offset, end, append_eos=False):
     ds = indexed_dataset.make_builder(dataset_dest_file(args, output_prefix, lang, "bin"), impl=args.dataset_impl)
 
     def consumer(tensor):

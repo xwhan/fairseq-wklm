@@ -21,5 +21,6 @@ for INPUT_TYPE in $VAR
         --testpref $TASK_DATA_FOLDER/test/$INPUT_TYPE.txt \
         --destdir $OUT_DATA_FOLDER/$INPUT_TYPE/ \
         --workers 10 \
-        --srcdict $DICTIONARY_LOCATION;
+        --srcdict $DICTIONARY_LOCATION \
+        --task span_qa;
 done

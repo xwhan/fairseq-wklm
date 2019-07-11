@@ -39,6 +39,7 @@ class RankerDataset(Dataset):
         self.task = task
         self.data_path = data_path
         self.raw_data = self.load_dataset()
+
         self.vocab = task.dictionary
 
     def __getitem__(self, index):

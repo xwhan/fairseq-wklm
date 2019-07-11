@@ -15,6 +15,25 @@ from fairseq.data.masked_lm_dictionary import BertDictionary
 from fairseq import utils
 from fairseq.tokenization import BertTokenizer, whitespace_tokenize
 
+"""
+expexted format: {'qid':  'para_id':  'para':  'answer': 'answer_start':}
+"""
+
+
+def convert_format(file_in, file_out):
+    raw_data = json.load(open(file_in))['data']
+    samples = []
+    for item in raw_data:
+        for paragraph in item['paragraphs']:
+            context = paragraph['context']
+            for qa in paragraph['qas']:
+                samples.append({'qid': qa['id'], 'para_id': 0, 'para': context, 'answer': [_['text'] for _ in qa['answers']], 'answer_start':[_['answer_start'] for _ in qa['answers']], 'q': qa['question']})
+    print(f'read {len(samples)} examples')
+
+    with open(file_out, 'w') as g:
+        for sample in samples:
+            g.write(json.dumps(sample) + '\n')
+
 
 def process_files(data_folder, output_folder):
     """
@@ -33,12 +52,7 @@ def process_files(data_folder, output_folder):
             return True
         return False
 
-    def find_ans_span(answer_text, context, char_to_word_offset, doc_tokens, all_doc_tokens, orig_to_tok_index, tokenizer):
-
-        char_start = context.find(answer_text)
-        if char_start == -1:
-            print('cannot find the answer')
-            return -1, -1
+    def find_ans_span(answer_text, char_start, context, char_to_word_offset, doc_tokens, all_doc_tokens, orig_to_tok_index, tokenizer):
 
         orig_answer_text = answer_text
         answer_len = len(orig_answer_text)
@@ -64,9 +78,14 @@ def process_files(data_folder, output_folder):
 
     def _process_sample(item, tokenizer):
 
+
+
         answer_list = [_.lower() for _ in item['answer']] # multiple answers
         context = item['para'].lower()
-        sample_id = item['qid'] + "_para_id" + str(item['para_id']) 
+        sample_id = item['qid'] + "_para_id" + str(item['para_id'])
+
+        answer_starts = [_ for _ in item['answer_start']]
+
         # process context
         doc_tokens = []
         char_to_word_offset = []
@@ -98,8 +117,8 @@ def process_files(data_folder, output_folder):
         answer_end = []
         answer_text = []
         is_impossible = True
-        for answer in answer_list:
-            start, end = find_ans_span(answer, context, char_to_word_offset, doc_tokens, all_doc_tokens, orig_to_tok_index, tokenizer)
+        for answer, char_start in zip(answer_list, answer_starts):
+            start, end = find_ans_span(answer, char_start,context, char_to_word_offset, doc_tokens, all_doc_tokens, orig_to_tok_index, tokenizer)
             if start != -1:
                 answer_start.append(start)
                 answer_end.append(end)
@@ -112,7 +131,7 @@ def process_files(data_folder, output_folder):
 
         return (all_doc_tokens, q, answer_start, answer_end, answer_text, is_impossible, sample_id)
 
-    splits = ['train', 'valid', 'test']
+    splits = ['train', 'valid']
     tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt')
 
     for split in splits:
@@ -150,7 +169,7 @@ def binarize_list(words, d):
 def binarize(args):
     dictionary = BertDictionary.load('/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt')
 
-    splits = ['train', 'valid', 'test']
+    splits = ['train', 'valid']
     for split in splits:
         question_lines = open(os.path.join(args.output, split, 'q.txt')).readlines()
         context_lines = open(os.path.join(args.output, split, 'c.txt')).readlines()
@@ -172,7 +191,7 @@ def debinarize_list(indice, d):
 def debinarize(args):
     dictionary = BertDictionary.load('/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt')
 
-    splits = ['train', 'valid', 'test']
+    splits = ['train', 'valid']
     for split in splits:
         question_lines = open(os.path.join(args.output, f'{split}.q')).readlines()
         context_lines = context_out = open(os.path.join(args.output, f'{split}.c')).readlines()
@@ -199,13 +218,13 @@ def main():
         '--input',
         metavar='DIR',
         help='input split path',
-        default='/private/home/xwhan/dataset/webq_qa/splits'
+        default='/private/home/xwhan/dataset/squad1.1/splits'
     )
     parser.add_argument(
         '--output',
         metavar='DIR',
         help='Path for output',
-        default='/private/home/xwhan/dataset/webq_qa/processed-splits'
+        default='/private/home/xwhan/dataset/squad1.1/processed-splits'
     )
 
     parser.add_argument('--dict_path', default='/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt')
@@ -221,6 +240,7 @@ def main():
 
 def _improve_answer_span(doc_tokens, input_start, input_end, process,
                          orig_answer_text, tokenizer):
+
     tok_answer_text = " ".join(process(orig_answer_text, tokenizer))
 
     for new_start in range(input_start, input_end + 1):
@@ -236,3 +256,4 @@ if __name__ == '__main__':
     # add_span_and_char_offset()
 
     main()
+    # convert_format("/private/home/xwhan/dataset/squad1.1/splits/train_orig.json", "/private/home/xwhan/dataset/squad1.1/splits/train.json")

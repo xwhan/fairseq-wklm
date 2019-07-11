@@ -61,8 +61,10 @@ class SpanQATask(FairseqTask):
         Args:
             args (argparse.Namespace): parsed command-line arguments
         """
+
+        # dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
         dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
-        print('| dictionary: {} types'.format(len(dictionary)))
+        print('| get dictionary: {} types from {}'.format(len(dictionary), os.path.join(args.data, 'dict.txt')))
 
         return cls(args, dictionary)
 
@@ -191,7 +193,6 @@ class SpanQATask(FairseqTask):
                 tn = 0
                 fp = t.size(0) - tp
                 fn = 0
-
                 logging_output['extra_metrics'][g] = (tp, tn, fp, fn)
         else:
             loss, sample_size, logging_output = outputs
