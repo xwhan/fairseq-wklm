@@ -18,7 +18,7 @@ def get_filter_str(val):
     s = f'cf{f[0][1]}'
     return s
 
-max_update= (33000 // 8) * 15
+max_update= (100000 // 8) * 15
 
 def get_grid(args):
     return [
@@ -39,12 +39,13 @@ def get_grid(args):
         hyperparam('--criterion', ['span_qa'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--seed', [3,4], save_dir_key=lambda val: f'seed{val}'),
         hyperparam('--skip-invalid-size-inputs-valid-test'),
-        hyperparam('--max-sentences', [8, 16], save_dir_key=lambda val: f'bsz{val}'),
+        hyperparam('--max-sentences', 8, save_dir_key=lambda val: f'bsz{val}'),
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', 1000),
         hyperparam('--model-dim', 768),
-        hyperparam('--fp16', True, binary_flag=True),
         hyperparam('--min-lr', 1e-9),
+        hyperparam("--ddp-backend", "c10d"),
+        hyperparam('--restore-file', "/checkpoint/xwhan/2019-07-11/reader_squad.span_qa.mxup61875.adam.lr1e-05.bert.crs_ent.seed4.bsz8.ngpu1/checkpoint_best.pt")
     ]
 
 

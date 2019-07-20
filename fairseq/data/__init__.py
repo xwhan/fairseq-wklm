@@ -39,6 +39,7 @@ from .raw_label_dataset import RawLabelDataset
 from .pad_dataset import RightPadDataset
 from .sort_dataset import SortDataset
 from .spanqa_dataset import SpanQADataset
+from .kdn_dataset import KDNDataset
 
 from .iterators import (
     CountingIterator,
@@ -89,5 +90,6 @@ __all__ = [
     'RightPadDataset',
     'SortDataset',
     'ConcatSentencesDataset',
-    'SpanQADataset'
+    'SpanQADataset',
+    'KDNDataset'
 ]

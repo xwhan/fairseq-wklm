@@ -7,11 +7,11 @@ DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
 
 SPLITS="train valid"
 
-DATASET="squad1.1"
+DATASET="kdn"
 TASK_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/processed-splits"
 OUT_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/binarized"
 
-VAR="q c"
+VAR="context"
 
 for INPUT_TYPE in $VAR
     do
@@ -23,5 +23,5 @@ for INPUT_TYPE in $VAR
         --destdir $OUT_DATA_FOLDER/$INPUT_TYPE/ \
         --workers 10 \
         --srcdict $DICTIONARY_LOCATION \
-        --task span_qa;
+        --task kdn;
 done

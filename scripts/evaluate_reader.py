@@ -299,17 +299,11 @@ def main(args):
         with open(args.save_path, 'w') as g:
             json.dump(qid2results, g)
 
-    if args.eval_start_end:
-        gold_starts = open('/private/home/xwhan/dataset/webq_qa/processed-splits/valid/ans_start.txt').readlines()
-        gold_starts = [int(l.strip().split()[0]) for l in gold_starts]
-        assert len(gold_starts) == len(start_preds)
-        s_acc = np.mean([_1 == _2 for _1, _2 in zip(gold_starts, start_preds)])
-        print(s_acc)
 
     # evaluation
     qid2pred = {}
     for qid in qid2results.keys():
-        qid2results[qid].sort(key=lambda x:x[2], reverse=True)
+        qid2results[qid].sort(key=lambda x:combine(x[1],x[2]), reverse=True)
         qid2pred[qid] = qid2results[qid][0][0]
 
     # load groundtruth
@@ -328,10 +322,11 @@ def main(args):
     print(f'f1 score {np.mean(f1_scores)}')
     print(f'em score {np.mean(em_scores)}')
 
+def combine(s1, s2, alpha=0.1):
+    return s1 * alpha + s2 * (1 - alpha) 
+
 def metrics(args):
     prediction = json.load(open('/private/home/xwhan/dataset/webq_qa/prediction.json'))
-    def combine(s1, s2):
-        return s1 + s2
 
     # load groundtruth
     qid2ground = {}
@@ -357,13 +352,12 @@ if __name__ == '__main__':
     parser = options.get_parser('Trainer', 'span_qa')
     options.add_dataset_args(parser)
     parser.add_argument('--criterion', default='span_qa')
-    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-07-09/reader_more_epochs.span_qa.mxup61875.adam.lr5e-05.bert.crs_ent.seed4.bsz16.ngpu1/checkpoint_best.pt')
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_qa/splits/valid.json', type=str)
-    parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/valid.json')
-    parser.add_argument('--save-path', default='/private/home/xwhan/dataset/webq_qa/valid_prediction.json')
+    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-07-12/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_last.pt')
+    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json', type=str)
+    parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/test.json')
+    parser.add_argument('--save-path', default='/private/home/xwhan/dataset/webq_qa/prediction_ft.json')
     parser.add_argument('--eval-bsz', default=16, type=int)
     parser.add_argument('--save', action='store_true')
-    parser.add_argument('--eval_start_end', action='store_true')
     args = options.parse_args_and_arch(parser)
     args = parser.parse_args()
 

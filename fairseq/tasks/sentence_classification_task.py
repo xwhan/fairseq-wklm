@@ -151,13 +151,6 @@ class SentenceClassificationTask(FairseqTask):
             loss = loss.sum()
             logging_output['loss'] = loss.item()
 
-            if False:
-                correct = pos.new_zeros(pos.shape)
-                correct[pos] = correct_pos
-                correct[neg] = correct_neg
-                incorrect = ~correct
-                incorrect_ids = sample['id'][incorrect.nonzero()]
-                logging_output['extra_metrics']['misclassified'] = incorrect_ids.squeeze().tolist()
 
         return loss, sample_size, logging_output
 

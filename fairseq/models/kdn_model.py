@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 from fairseq.tasks.masked_lm import MaskedLMTask
 from . import (
@@ -8,29 +9,35 @@ from . import (
 from fairseq import checkpoint_utils
 
 
-@register_model('span_qa')
-class SpanQA(BaseFairseqModel):
+@register_model('kdn')
+class KDN(BaseFairseqModel):
     def __init__(self, args, pretrain_model):
         super().__init__()
 
         self.pretrain_model = pretrain_model
-        self.qa_outputs = nn.Linear(args.model_dim, 2)
+
+        self.kdn_outputs = nn.Linear(args.model_dim*2, 2) # aggregate CLS and entity tokens
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.qa_outputs.weight.data.normal_(mean=0.0, std=0.02)
-        self.qa_outputs.bias.data.zero_()
+        self.kdn_outputs.weight.data.normal_(mean=0.0, std=0.02)
+        self.kdn_outputs.bias.data.zero_()
 
-    def forward(self, text, segment, paragraph_mask):
-        x, _ = self.pretrain_model(text, segment)
+    def forward(self, sentence, segment, entity_masks):
+        """
+        entity_masks: B, |E|, L
+        outputs: B, |E|, 2
+        """
+        x, _ = self.pretrain_model(sentence, segment)
 
-        logits = self.qa_outputs(x)
-        if paragraph_mask.size(1) > x.size(1):
-            paragraph_mask = paragraph_mask[:, :x.size(1)]
-        assert [paragraph_mask[i].any() for i in range(paragraph_mask.size(0))]
-        start, end = logits.split(1, dim=-1)
-        return start, end, paragraph_mask
+        cls_rep = x[:,0,:]
+
+        entity_rep = torch.bmm(entity_masks, x)
+        entity_rep = torch.cat([cls_rep.unsqueeze(1).expand_as(entity_rep), entity_rep], dim=-1)
+        entity_logits = self.kdn_outputs(entity_rep)
+
+        return entity_logits
 
     @staticmethod
     def add_args(parser):
@@ -38,11 +45,6 @@ class SpanQA(BaseFairseqModel):
         parser.add_argument('--bert-path', metavar='PATH', help='path to elmo model')
         parser.add_argument('--model-dim', type=int, metavar='N', help='decoder input dimension')
         parser.add_argument('--last-dropout', type=float, metavar='D', help='dropout before projection')
-        parser.add_argument('--model-dropout', type=float, metavar='D', help='lm dropout')
-        parser.add_argument('--attention-dropout', type=float, metavar='D', help='lm dropout')
-        parser.add_argument('--relu-dropout', type=float, metavar='D', help='lm dropout')
-        parser.add_argument('--proj-unk', action='store_true', help='if true, also includes unk emb in projection')
-        parser.add_argument('--layer-norm', action='store_true', help='if true, does non affine layer norm before proj')
 
     @classmethod
     def build_model(cls, args, task):
@@ -59,12 +61,12 @@ class SpanQA(BaseFairseqModel):
         models, _ = checkpoint_utils.load_model_ensemble(
         [args.bert_path], arg_overrides={
             'remove_head': True, 'share_encoder_input_output_embed': False
-        }, task=task,)
+        }, task=task)
         assert len(models) == 1, 'ensembles are currently not supported for elmo embeddings'
         model = models[0]
-        return SpanQA(args, model)
+        return KDN(args, model)
 
 
-@register_model_architecture('span_qa', 'span_qa')
+@register_model_architecture('kdn', 'kdn')
 def base_architecture(args):
     args.model_dim = getattr(args, 'model_dim', 768)

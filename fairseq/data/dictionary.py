@@ -208,6 +208,10 @@ class Dictionary(object):
         d.pad_index = d.pad()
         d.eos_index = d.eos()
         d.unk_index = d.unk()
+
+        # import pdb; pdb.set_trace()
+        # print(d.pad_index)
+
         return d
 
     def _save(self, f, kv_iterator):
@@ -241,6 +245,8 @@ class Dictionary(object):
             words = list(reversed(words))
         nwords = len(words)
         ids = torch.LongTensor(nwords + 1 if append_eos else nwords)
+
+        # import pdb; pdb.set_trace()
 
         for i, word in enumerate(words):
             if add_if_not_exist:

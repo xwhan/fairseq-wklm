@@ -24,7 +24,7 @@ def safe_readline(f):
 class Binarizer:
 
     @staticmethod
-    def binarize(filename, dict, consumer, tokenize=tokenize_line, append_eos=True, reverse_order=False,
+    def binarize(filename, dict, consumer, tokenize=tokenize_line, append_eos=False, reverse_order=False,
                  offset=0, end=-1):
         nseq, ntok = 0, 0
         replaced = Counter()

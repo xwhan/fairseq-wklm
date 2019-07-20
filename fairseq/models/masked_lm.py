@@ -116,8 +116,6 @@ class MaskedLMModel(BaseFairseqModel):
         if not hasattr(args, 'max_positions'):
             args.max_positions = args.tokens_per_sample
 
-        # utils.print_args(args)
-
         encoder = MaskedLMEncoder(args, task.dictionary)
         return cls(args, encoder)
 
