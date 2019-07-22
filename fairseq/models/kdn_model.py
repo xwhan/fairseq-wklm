@@ -32,7 +32,7 @@ class KDN(BaseFairseqModel):
         x, _ = self.pretrain_model(sentence, segment)
 
         cls_rep = x[:,0,:]
-
+        entity_masks = entity_masks.type(x.type())
         entity_rep = torch.bmm(entity_masks, x)
         entity_rep = torch.cat([cls_rep.unsqueeze(1).expand_as(entity_rep), entity_rep], dim=-1)
         entity_logits = self.kdn_outputs(entity_rep)

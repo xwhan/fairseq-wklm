@@ -29,7 +29,7 @@ class KDN_loss(FairseqCriterion):
         3) logging outputs to display while training
         """
 
-        if sample['net_input']['sentence'].size(1) > 512:
+        if sample['net_input']['sentence'].size(1) > 64:
             assert False
 
         entity_logits = model(**sample['net_input'])

@@ -20,6 +20,7 @@ from fairseq.meters import ClassificationMeter
 from . import FairseqTask, register_task
 
 from fairseq.data.masked_lm_dictionary import BertDictionary
+from fairseq.tokenization import BertTokenizer
 
 
 @register_task('kdn')
@@ -42,7 +43,7 @@ class KDNTask(FairseqTask):
     def add_args(parser):
         """Add task-specific arguments to the parser."""
         parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/webq_qa')
-        parser.add_argument('--max-length', type=int, default=512)
+        parser.add_argument('--max-length', type=int, default=64)
         parser.add_argument('--num-labels', type=int, default=2, help='number of labels')
         parser.add_argument('--ignore-index', type=int, default=-1)
 
@@ -50,6 +51,7 @@ class KDNTask(FairseqTask):
         super().__init__(args)
         self.dictionary = dictionary
         self.ignore_index = -1
+        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -62,7 +64,6 @@ class KDNTask(FairseqTask):
         # dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
         dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
         print('| get dictionary: {} types from {}'.format(len(dictionary), os.path.join(args.data, 'dict.txt')))
-
         return cls(args, dictionary)
 
     def load_dataset(self, split, combine=False):
@@ -158,16 +159,15 @@ class KDNTask(FairseqTask):
         }
 
     def get_loss(self, model, criterion, sample, is_valid=False):
-        loss, sample_size, logging_output = criterion(model, sample, reduce=not is_valid)
+        loss, sample_size, logging_output = criterion(model, sample)
 
         if is_valid:
-            assert self.num_labels == 2
             probs = logging_output['lprobs'].exp()
             pos = sample['target'].view(-1).eq(1)
             neg = sample['target'].view(-1).eq(0)
 
-            correct_pos = probs[pos] > 1 / self.num_labels
-            correct_neg = probs[neg] > 1 / self.num_labels
+            correct_pos = probs[pos] > 0.5
+            correct_neg = probs[neg] > 0.5
 
             tp = correct_pos.long().sum()
             tn = correct_neg.long().sum()

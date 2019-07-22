@@ -16,11 +16,14 @@ def divide_examples(raw_folder="/private/home/xwhan/Wikipedia/tokenized_debug", 
         for line in open(file_name).readlines():
             samples.append(json.loads(line.strip()))
 
-    train_samples = samples
+    print(f'Read {len(samples)} samples in total...')
+
+    train_samples = samples[:-500]
     dev_samples = samples[-500:]
 
-    chunk_size = 511
+    chunk_size = 63
     splits = {'train': train_samples, 'valid': dev_samples}
+    num_chunks = 0
     for s, data in splits.items():
 
         context_out = open(os.path.join(outfolder, s, 'context.txt'), 'w')
@@ -44,9 +47,13 @@ def divide_examples(raw_folder="/private/home/xwhan/Wikipedia/tokenized_debug", 
                     continue
                 ent_chunks[chunk_id].append({'ent_toks': ent['toks'], 'offset': offset_, 'label': ent['label']})
 
+            num_chunks += len(tok_chunks)
+
             # write to files
             for idx, tok_chunk in enumerate(tok_chunks):
                 co_ents = ent_chunks[idx]
+                if len(co_ents) == 0:
+                    continue
                 offsets = []
                 lens = []
                 lbls = []
@@ -61,6 +68,8 @@ def divide_examples(raw_folder="/private/home/xwhan/Wikipedia/tokenized_debug", 
                 print(' '.join([str(ii) for ii in offsets]), file=ent_offset_out)
                 print(' '.join([str(ii) for ii in lbls]), file=ent_lbl_out)
                 print(' '.join([str(ii) for ii in lens]), file=ent_len_out)
+
+    print(f'Split into {num_chunks} chunks...')
 
 if __name__ == '__main__':
     divide_examples()

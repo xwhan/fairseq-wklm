@@ -39,7 +39,7 @@ class ParagraphRanker(BaseFairseqModel):
         return x
         
     def max_positions(self):
-       return  self.pretrain_model.max_positions()
+       return self.pretrain_model.max_positions()
 
     @staticmethod
     def add_args(parser):
