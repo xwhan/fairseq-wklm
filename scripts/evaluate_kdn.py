@@ -84,7 +84,7 @@ def bert_eval(model, task):
 
         rel_hits = defaultdict(list)
         with torch.no_grad():
-            for text, ground in tqdm(list(zip(texts, true_tails))): 
+            for text, ground in tqdm(list(zip(texts, true_tails))[:100]): 
                 label_and_scores = []
                 for batch in bert_batcher(bert_tokenizer, text, ground, candidate_dict, task):
                     cuda_input = torch.from_numpy(batch['inputs']).to('cuda')
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     parser = options.get_parser('Trainer', 'kdn')
     options.add_dataset_args(parser)
     parser.add_argument('--criterion', default='kdn_loss')
-    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-07-21/kdn_100chunk.mxup50000.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu4/checkpoint_best.pt')
+    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-07-21/kdn_csz64_k20.mxup100000.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu8/checkpoint_last.pt')
     args = options.parse_args_and_arch(parser)
     args = parser.parse_args()
 

@@ -166,8 +166,8 @@ class KDNTask(FairseqTask):
             pos = sample['target'].view(-1).eq(1)
             neg = sample['target'].view(-1).eq(0)
 
-            correct_pos = probs[pos] > 0.5
-            correct_neg = probs[neg] > 0.5
+            correct_pos = probs[pos][:,1] > 0.5
+            correct_neg = probs[neg][:,0] > 0.5
 
             tp = correct_pos.long().sum()
             tn = correct_neg.long().sum()

@@ -33,10 +33,10 @@ def get_grid(args):
         hyperparam('--log-format', 'json'),
         hyperparam('--seed', 3, save_dir_key=lambda val: f'seed{val}'),
         hyperparam('--max-sentences', 8, save_dir_key=lambda val: f'bsz{val}'),
-        hyperparam('--log-interval', 500),
+        hyperparam('--log-interval', 1000),
         hyperparam('--model-dim', 768),
         hyperparam('--fp16', True, binary_flag=True),
-        hyperparam('--distributed-world-size', 8),
+        hyperparam('--distributed-world-size', 4),
         hyperparam('--ddp-backend', "no_c10d"),
     ]
 
