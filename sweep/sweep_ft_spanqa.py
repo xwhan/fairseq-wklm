@@ -33,7 +33,8 @@ def get_grid(args):
         hyperparam('--lr', [
           1e-05, 3e-5, 5e-5
         ], save_dir_key=lambda val: f'lr{val}'),
-        hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_1_70000.pt',
+        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_2_180000.pt',
             save_dir_key=lambda val: f'bert'),
         hyperparam('--sentence-avg', True, binary_flag=True),
         hyperparam('--criterion', ['span_qa'], save_dir_key=lambda val: f'crs_ent'),
@@ -44,8 +45,10 @@ def get_grid(args):
         hyperparam('--log-interval', 1000),
         hyperparam('--model-dim', 768),
         hyperparam('--min-lr', 1e-9),
-        hyperparam("--ddp-backend", "c10d"),
-        hyperparam('--restore-file', "/checkpoint/xwhan/2019-07-11/reader_squad.span_qa.mxup61875.adam.lr1e-05.bert.crs_ent.seed4.bsz8.ngpu1/checkpoint_best.pt")
+        hyperparam("--ddp-backend", "no_c10d"),
+        hyperparam("--use-kdn")
+
+        # hyperparam('--restore-file', "/checkpoint/xwhan/2019-07-11/reader_squad.span_qa.mxup61875.adam.lr1e-05.bert.crs_ent.seed4.bsz8.ngpu1/checkpoint_best.pt")
     ]
 
 

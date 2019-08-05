@@ -3,6 +3,11 @@
 
 vocab_dicts/
 
+scripts/scripts_pre
+scripts/jobs
+scripts/stderr
+scripts/stdout
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -16,6 +16,9 @@ from pytorch_transformers import BertTokenizer
 
 data_path = "/private/home/xwhan/KBs/Wikidata/fact_completion/text_statement_ranked_by_mincount.json"
 
+def debinarize_list(vocab, indices):
+    return [vocab[idx] for idx in indices]
+
 def bert_batcher(bert_tokenizer, pretext, ground, candidate_dict, task, bsz=200):
     """
     candidate_dict: {'text': 'binarized_idx'}
@@ -70,7 +73,7 @@ def bert_eval(model, task):
     bert_tokenizer = task.tokenizer
     statements = json.load(open(data_path))
     metrics = defaultdict(dict)
-    for rel in ["P19"]:
+    for rel in statements.keys():
         tail_candidates = statements[rel]['candidates']
         texts = [_['statement'].split('<o>')[0].strip()
                 for _ in statements[rel]['statements']]
@@ -115,8 +118,7 @@ if __name__ == '__main__':
     parser = options.get_parser('Trainer', 'kdn')
     options.add_dataset_args(parser)
     parser.add_argument('--criterion', default='kdn_loss')
-    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-07-21/kdn_csz64_k20.mxup100000.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu8/checkpoint_last.pt')
+    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_2_180000.pt')
     args = options.parse_args_and_arch(parser)
     args = parser.parse_args()
-
     main(args)

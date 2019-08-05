@@ -21,13 +21,15 @@ def collate(samples, pad_idx):
     batch_text = data_utils.collate_tokens([s['text'] for s in samples], pad_idx, left_pad=False)
 
     target = torch.cat([s['target'].unsqueeze(0) for s in samples], dim=0)
-
     masks = torch.zeros(batch_text.size(0), len(samples[0]['target']), batch_text.size(-1))
 
     for idx, s in enumerate(samples):
         offsets = s['ent_offsets']
         lens = s['ent_lens']
         for idx_, (offset, length) in enumerate(zip(offsets, lens)):
+            if length == 0:
+                target[idx, idx_] = -1
+                continue
             masks[idx, idx_, offset:offset+length] = 1 / length
 
     return {
@@ -76,9 +78,9 @@ class KDNDataset(FairseqDataset):
         ent_labels_padded = ent_labels + [-1] * (self.max_num_ent - len(ent_labels))
         ent_labels_padded = torch.tensor(ent_labels_padded).long()
 
-        # debug
+        # # debug
         # print(self.debinarize_list(sent.tolist())[ent_offsets[1]:ent_offsets[1] + ent_lens[1]])
-        # assert False
+        # import pdb; pdb.set_trace()
 
         return {'text': sent, 'segment': segment, 'target': ent_labels_padded, 'ent_offsets': ent_offsets, "ent_lens": ent_lens}
 

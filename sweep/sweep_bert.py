@@ -49,7 +49,7 @@ def get_grid(args):
     # batch size
     grid += [
         hyperparam("--tokens-per-sample", 512, save_dir_key=lambda val: f"st{val}"),
-        hyperparam("--max-sentences", max_sentences, save_dir_key=lambda val: f"ms{val}"),
+       # hyperparam("--max-sentences", max_sentences, save_dir_key=lambda val: f"ms{val}"),
         hyperparam("--max-tokens", max_tokens, save_dir_key=lambda val: f"mt{val}"),
         hyperparam("--update-freq", update_freq, save_dir_key=lambda val: f"uf{val}"),
     ]
@@ -63,6 +63,7 @@ def get_grid(args):
     grid += [
         hyperparam("--arch", arch, save_dir_key=lambda val: val),
         hyperparam('--criterion', 'masked_lm_loss'),
+        hyperparam('--nsp-loss-weight', 1.0),
     ]
 
     # regularization
@@ -87,7 +88,8 @@ def get_grid(args):
         hyperparam("--lr", peak_lr, save_dir_key=lambda val: f"lr{val}"),
         hyperparam("--total-num-update", max_update),
         hyperparam("--warmup-updates", 10000, save_dir_key=lambda val: f"warm{val}"),
-
+        #hyperparam("--reset-lr-scheduler"),
+        #hyperparam("--reset-optimizer"),
         #hyperparam("--lr-scheduler", "inverse_sqrt"),
         #hyperparam("--lr", 2e-3, save_dir_key=lambda val: f"lr{val}"),
         #hyperparam("--warmup-init-lr", 0),
@@ -100,13 +102,13 @@ def get_grid(args):
 
         hyperparam("--fp16", save_dir_key=lambda val: "fp16"),
         #hyperparam("--memory-efficient-fp16", save_dir_key=lambda val: "me_fp16"),
-        hyperparam("--fp16-init-scale", 4),
+        hyperparam("--fp16-init-scale", 128),
         hyperparam("--threshold-loss-scale", 1),
-        hyperparam("--fp16-scale-window", 128),
     ]
 
     # data loading settings
     grid += [
+        #hyperparam("--lazy-load"),
         hyperparam("--num-workers", num_data_loaders),
     ]
 

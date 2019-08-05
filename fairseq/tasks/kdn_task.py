@@ -43,7 +43,7 @@ class KDNTask(FairseqTask):
     def add_args(parser):
         """Add task-specific arguments to the parser."""
         parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/webq_qa')
-        parser.add_argument('--max-length', type=int, default=64)
+        parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-labels', type=int, default=2, help='number of labels')
         parser.add_argument('--ignore-index', type=int, default=-1)
 
@@ -61,12 +61,11 @@ class KDNTask(FairseqTask):
             args (argparse.Namespace): parsed command-line arguments
         """
 
-        # dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
         dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
         print('| get dictionary: {} types from {}'.format(len(dictionary), os.path.join(args.data, 'dict.txt')))
         return cls(args, dictionary)
 
-    def load_dataset(self, split, combine=False):
+    def load_dataset(self, split, epoch=0, combine=False):
         """Load a given dataset split.
 
         Args:
@@ -83,10 +82,12 @@ class KDNTask(FairseqTask):
         ent_lens = []
         ent_lbls = []
 
+        epoch = epoch % 100
+
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
 
-            path_context = os.path.join(binarized_data_path, 'context', split_k)
+            path_context = os.path.join(binarized_data_path, split_k, f"shard_{epoch}", split_k)
             for path, datasets in zip([path_context], loaded_datasets):
                 if IndexedDataset.exists(path):
                     ds = IndexedDataset(path, fix_lua_indexing=True)
@@ -107,19 +108,19 @@ class KDNTask(FairseqTask):
             # load start and end labels
             raw_path = os.path.join(tokenized_data_path, split_k)
             
-            with open(os.path.join(raw_path, 'offset.txt'), 'r') as offset_f:
+            with open(os.path.join(raw_path, f'offset_{epoch}.txt'), 'r') as offset_f:
                 lines = offset_f.readlines()
                 for line in lines:
                     offsets = [int(x) for x in line.strip().split()]
                     ent_offsets.append(offsets)
             
-            with open(os.path.join(raw_path, 'len.txt'), 'r') as len_f:
+            with open(os.path.join(raw_path, f'len_{epoch}.txt'), 'r') as len_f:
                 lines = len_f.readlines()
                 for line in lines:
                     lens = [int(x) for x in line.strip().split()]
                     ent_lens.append(lens)
             
-            with open(os.path.join(raw_path, 'lbl.txt'), 'r') as lbl_f:
+            with open(os.path.join(raw_path, f'lbl_{epoch}.txt'), 'r') as lbl_f:
                 lines = lbl_f.readlines()
                 for line in lines:
                     lbls = [int(x) for x in line.strip().split()]

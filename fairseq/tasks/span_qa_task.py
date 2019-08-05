@@ -68,7 +68,7 @@ class SpanQATask(FairseqTask):
 
         return cls(args, dictionary)
 
-    def load_dataset(self, split, combine=False):
+    def load_dataset(self, split, combine=False, epoch=0):
         """Load a given dataset split.
 
         Args:

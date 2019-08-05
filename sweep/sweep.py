@@ -256,6 +256,7 @@ def launch_train(args, config):
             '--unbuffered',
         ] + train_cmd
         ntasks_per_node = 1 if args.one_task or args.num_nodes == 1 else args.num_gpus
+
         gres = ':'.join(
             ['gpu'] +
             ([] if args.gpu_type == '' else [args.gpu_type]) +

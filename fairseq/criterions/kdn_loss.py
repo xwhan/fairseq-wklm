@@ -28,8 +28,7 @@ class KDN_loss(FairseqCriterion):
         2) the sample size, which is used as the denominator for the gradient
         3) logging outputs to display while training
         """
-
-        if sample['net_input']['sentence'].size(1) > 64:
+        if sample['net_input']['sentence'].size(1) > 512:
             assert False
 
         entity_logits = model(**sample['net_input'])

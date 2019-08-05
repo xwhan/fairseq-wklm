@@ -24,12 +24,15 @@ class KDN(BaseFairseqModel):
         self.kdn_outputs.weight.data.normal_(mean=0.0, std=0.02)
         self.kdn_outputs.bias.data.zero_()
 
-    def forward(self, sentence, segment, entity_masks):
+    def forward(self, sentence, segment, entity_masks=None, only_states=False):
         """
         entity_masks: B, |E|, L
         outputs: B, |E|, 2
         """
         x, _ = self.pretrain_model(sentence, segment)
+
+        if only_states:
+            return x
 
         cls_rep = x[:,0,:]
         entity_masks = entity_masks.type(x.type())
@@ -38,6 +41,7 @@ class KDN(BaseFairseqModel):
         entity_logits = self.kdn_outputs(entity_rep)
 
         return entity_logits
+
 
     @staticmethod
     def add_args(parser):
