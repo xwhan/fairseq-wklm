@@ -18,9 +18,10 @@ class CrossEntropyCriterion(FairseqCriterion):
 
     def __init__(self, args, task):
         super().__init__(args, task)
-        self.padding_idx = task.padding_idx
+        self.padding_idx = task.ignore_index
+        self.max_length = task.max_length
 
-    def forward(self, model, sample, reduce=True):
+    def forward(self, model, sample):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -29,30 +30,28 @@ class CrossEntropyCriterion(FairseqCriterion):
         3) logging outputs to display while training
         """
 
-        if sample['net_input']['sentence'].size(1) > 512:
+        if sample['net_input']['sentence'].size(1) > self.max_length:
             assert False
 
         net_output = model(**sample['net_input'])
-        loss, _ = self.compute_loss(model, net_output, sample, reduce=reduce)
-        #import pdb; pdb.set_trace()
+        loss, lprobs = self.compute_loss(model, net_output, sample)
         sample_size = sample['target'].size(0) if self.args.sentence_avg else sample['ntokens']
         logging_output = {
-            'loss': utils.item(loss.data) if reduce else loss.data,
+            'loss': utils.item(loss.data),
             'ntokens': sample['ntokens'],
             'nsentences': sample['target'].size(0),
             'sample_size': sample_size,
+            'lprobs': lprobs
         }
-        if not reduce:
-            logging_output['model_out'] = net_output
+
         return loss, sample_size, logging_output
 
-    def compute_loss(self, model, net_output, sample, reduce=True):
+    def compute_loss(self, model, net_output, sample):
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
         lprobs = lprobs.view(-1, lprobs.size(-1))
         target = model.get_targets(sample, net_output).view(-1)
-        loss = F.nll_loss(lprobs, target, size_average=False, ignore_index=self.padding_idx,
-                          reduce=reduce)
-        return loss, loss
+        loss = F.nll_loss(lprobs, target, ignore_index=self.padding_idx, reduction="sum")
+        return loss, lprobs
 
     @staticmethod
     def aggregate_logging_outputs(logging_outputs):

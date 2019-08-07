@@ -226,7 +226,8 @@ class MaskedLMEncoder(FairseqEncoder):
         elif self.embed_out is not None:
             x = self.embed_out(x)
 
-        if self.lm_output_learned_bias:
+        # if self.lm_output_learned_bias:
+        if self.load_softmax:
             x = x + self.lm_output_learned_bias
         sentence_logits = None
         if self.sentence_projection_layer:

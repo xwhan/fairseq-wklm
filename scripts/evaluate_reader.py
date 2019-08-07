@@ -352,7 +352,7 @@ if __name__ == '__main__':
     parser = options.get_parser('Trainer', 'span_qa')
     options.add_dataset_args(parser)
     parser.add_argument('--criterion', default='span_qa')
-    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/private/home/xwhan/fairseq-py/checkpoints/checkpoint_last.pt')
+    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
     parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json', type=str)
 
     parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/test.json')
@@ -360,7 +360,7 @@ if __name__ == '__main__':
     # save the prediction file
     parser.add_argument('--save-path', default='/private/home/xwhan/dataset/webq_qa/prediction_kdn.json')
 
-    parser.add_argument('--eval-bsz', default=16, type=int)
+    parser.add_argument('--eval-bsz', default=32, type=int)
     parser.add_argument('--save', action='store_true')
     args = options.parse_args_and_arch(parser)
     args = parser.parse_args()

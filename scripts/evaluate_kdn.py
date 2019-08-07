@@ -12,8 +12,6 @@ from fairseq import checkpoint_utils, tasks, options
 
 import numpy as np
 
-from pytorch_transformers import BertTokenizer
-
 data_path = "/private/home/xwhan/KBs/Wikidata/fact_completion/text_statement_ranked_by_mincount.json"
 
 def debinarize_list(vocab, indices):

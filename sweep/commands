@@ -1,0 +1,31 @@
+# commands
+python train.py --fp16  ~/OpenBookQA/data/OpenBookQA-V1-Sep2018/Data/Main --task multi_choice_qa --arch finetuning_sentence_classifier --save-interval 1 --max-update 100000 --lr 2e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --num-label 2 --distributed-world-size 1 --max-sentences 32 --optimizer adam
+
+
+# debug para ranker
+python train.py --fp16  /private/home/xwhan/dataset/webq_ranking --task paragaph_ranking --arch finetuning_paragraph_ranker --save-nterval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --num-label 2 --distributed-world-size 1 --max-sentences 8 --optimizer adam
+
+
+# run sweep for paragraph ranking
+python sweep/sweep_ft_ranker.py -d /private/home/xwhan/dataset/webq_ranking -p ranker_balanced_ldrop -t -1 -g 1 -n 1 --partition dev
+
+# debug span qa
+python train.py --fp16  --use-kdn /private/home/xwhan/dataset/webq_qa --task span_qa --arch span_qa --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_1_70000.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion span_qa 
+
+# sweep for spanqa
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/webq_qa -p reader_ft -t -1 -g 1 -n 1
+
+# cancel all jobs
+squeue -u xwhan | grep 163 | awk '{print $1}' | xargs -n 1 scancel
+
+
+# kdn debug
+python train.py --fp16 /checkpoint/xwhan/wiki_data --task kdn --arch kdn --save-interval 1 --max-update 1000000 --lr 1e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion kdn_loss --ddp-backend no_c10d --save-interval-updates 1000 --use_mlm
+
+# sweep for kdn
+python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data -p kdn_start_end -t -1 -g 8 -n 2
+
+# data processing flow
+* replace the entities, in process_wiki, `python process_wikipedia.py`
+* split into 512 chunks, in fairseq-py, `python scripts/preprocess_kdn.py`
+* binarize the data with sweep

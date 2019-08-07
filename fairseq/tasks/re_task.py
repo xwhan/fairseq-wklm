@@ -9,22 +9,24 @@ from functools import reduce
 import itertools
 import numpy as np
 import os
+import torch
 
 from torch.utils.data import ConcatDataset
 
 from fairseq.data import (
-    KDNDataset, TokenBlockDataset,
+    REDataset, TokenBlockDataset,
     IndexedDataset)
 from fairseq.meters import ClassificationMeter
 
 from . import FairseqTask, register_task
 
 from fairseq.data.masked_lm_dictionary import BertDictionary
+
 from fairseq.tokenization import BertTokenizer
 
 
-@register_task('kdn')
-class KDNTask(FairseqTask):
+@register_task('re')
+class RETask(FairseqTask):
     """
     Classify a sentence
 
@@ -42,19 +44,15 @@ class KDNTask(FairseqTask):
     @staticmethod
     def add_args(parser):
         """Add task-specific arguments to the parser."""
-        parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/webq_qa')
+        parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/tacred')
         parser.add_argument('--max-length', type=int, default=512)
-        parser.add_argument('--num-labels', type=int, default=2, help='number of labels')
-        parser.add_argument('--ignore-index', type=int, default=-1)
-        parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
+        parser.add_argument('--num-class', type=int, default=42)
 
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
-        self.ignore_index = args.ignore_index
         self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
-        self.max_length = args.max_length
-        self.use_mlm = args.use_mlm
+        self.ignore_index = -1
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -64,11 +62,13 @@ class KDNTask(FairseqTask):
             args (argparse.Namespace): parsed command-line arguments
         """
 
+        # dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
         dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
         print('| get dictionary: {} types from {}'.format(len(dictionary), os.path.join(args.data, 'dict.txt')))
+
         return cls(args, dictionary)
 
-    def load_dataset(self, split, epoch=0, combine=False):
+    def load_dataset(self, split, combine=False, epoch=0):
         """Load a given dataset split.
 
         Args:
@@ -77,21 +77,15 @@ class KDNTask(FairseqTask):
 
         loaded_datasets = [[]]
         stop = False
-
         binarized_data_path = os.path.join(self.args.data, "binarized")
         tokenized_data_path = os.path.join(self.args.data, "processed-splits")
         
-        ent_offsets = []
-        ent_lens = []
-        ent_lbls = []
-
-        epoch = epoch % 100
-
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
 
-            path_context = os.path.join(binarized_data_path, split_k, f"shard_{epoch}", split_k)
-            for path, datasets in zip([path_context], loaded_datasets):
+            path_sent = os.path.join(binarized_data_path, split_k)
+
+            for path, datasets in zip([path_sent], loaded_datasets):
                 if IndexedDataset.exists(path):
                     ds = IndexedDataset(path, fix_lua_indexing=True)
                 else:
@@ -102,7 +96,8 @@ class KDNTask(FairseqTask):
                         raise FileNotFoundError('Dataset not found: {} ({}) {}'.format(split, self.args.data, path))
                 datasets.append(
                     TokenBlockDataset(
-                        ds, ds.sizes, 0, pad=self.dictionary.pad(), eos=self.dictionary.eos(), break_mode='eos', include_targets=False,
+                        ds, ds.sizes, 0, pad=self.dictionary.pad(), eos=self.dictionary.eos(),
+                        break_mode='eos', include_targets=False,
                     ))
 
             if stop:
@@ -110,29 +105,46 @@ class KDNTask(FairseqTask):
 
             # load start and end labels
             raw_path = os.path.join(tokenized_data_path, split_k)
-            
-            with open(os.path.join(raw_path, f'offset_{epoch}.txt'), 'r') as offset_f:
-                lines = offset_f.readlines()
-                for line in lines:
-                    offsets = [int(x) for x in line.strip().split()]
-                    ent_offsets.append(offsets)
-            
-            with open(os.path.join(raw_path, f'len_{epoch}.txt'), 'r') as len_f:
-                lines = len_f.readlines()
-                for line in lines:
-                    lens = [int(x) for x in line.strip().split()]
-                    ent_lens.append(lens)
-            
-            with open(os.path.join(raw_path, f'lbl_{epoch}.txt'), 'r') as lbl_f:
+            e1_offsets = []
+            with open(os.path.join(raw_path, 'e1_start.txt'), 'r') as lbl_f:
                 lines = lbl_f.readlines()
                 for line in lines:
-                    lbls = [int(x) for x in line.strip().split()]
-                    ent_lbls.append(lbls)
+                    lbl = int(line.strip())
+                    e1_offsets.append(lbl)
+
+            e2_offsets = []
+            with open(os.path.join(raw_path, 'e2_start.txt'), 'r') as lbl_f:
+                lines = lbl_f.readlines()
+                for line in lines:
+                    lbl = int(line.strip())
+                    e2_offsets.append(lbl)
+
+            e1_lens = []
+            with open(os.path.join(raw_path, 'e1_len.txt'), 'r') as lbl_f:
+                lines = lbl_f.readlines()
+                for line in lines:
+                    lbl = int(line.strip())
+                    e1_lens.append(lbl)
+
+            e2_lens = []
+            with open(os.path.join(raw_path, 'e2_len.txt'), 'r') as lbl_f:
+                lines = lbl_f.readlines()
+                for line in lines:
+                    lbl = int(line.strip())
+                    e2_lens.append(lbl)
+
+            loaded_labels = []
+            with open(os.path.join(raw_path, 'lbl.txt'), 'r') as lbl_f:
+                lines = lbl_f.readlines()
+                for line in lines:
+                    lbl = int(line.strip())
+                    loaded_labels.append(lbl)
 
             print('| {} {} {} examples'.format(self.args.data, split_k, len(loaded_datasets[0][-1])))
 
             if not combine:
                 break
+
 
         if len(loaded_datasets[0]) == 1:
             dataset = loaded_datasets[0][0]
@@ -141,13 +153,13 @@ class KDNTask(FairseqTask):
             dataset = ConcatDataset(loaded_datasets[0])
             sizes = np.concatenate([ds.sizes for ds in loaded_datasets[0]])
 
-        max_num_ent = max([len(_) for _ in ent_offsets]) # max num of entitites per block
+        assert len(dataset) == len(loaded_labels)
 
-        assert len(dataset) == len(ent_lbls)
         shuffle = True if split == 'train' else False
-        self.datasets[split] = KDNDataset(
-            dataset, ent_lbls, ent_offsets, ent_lens, sizes, self.dictionary,
-            self.args.max_length, max_num_ent, shuffle=shuffle, use_mlm=self.use_mlm
+
+        self.datasets[split] = REDataset(
+            dataset, loaded_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, sizes, self.dictionary,
+            self.args.max_length, shuffle
         )
 
     def extra_meters(self):
@@ -158,36 +170,30 @@ class KDNTask(FairseqTask):
     def aggregate_extra_metrics(self, logs):
         return {
             'classification': tuple(
-                reduce(lambda q, w: (sum(x) for x in zip(q, w)), [log['extra_metrics']['classification'] for log in logs if 'extra_metrics' in log])),
-            'misclassified': sum([log['extra_metrics']['misclassified'] for log in logs if 'extra_metrics' in log], [])
+                reduce(lambda q, w: (sum(x) for x in zip(q, w)), [log['extra_metrics']['classification'] for log in logs if 'extra_metrics' in log]))
         }
 
+
     def get_loss(self, model, criterion, sample, is_valid=False):
-        loss, sample_size, logging_output = criterion(model, sample)
+        outputs = criterion(model, sample)
 
         if is_valid:
-            probs = logging_output['lprobs'].exp()
-            pos = sample['target'].view(-1).eq(1)
-            neg = sample['target'].view(-1).eq(0)
+            loss, sample_size, logging_output = outputs
+            lprobs = logging_output['lprobs']
+            pred = torch.argmax(lprobs, dim=-1)
+            t = sample['target'].squeeze(-1)
+            tp = t.eq(pred).long().sum().item()
+            tn = 0
+            fp = t.size(0) - tp
+            fn = 0
 
-            correct_pos = probs[pos][:,1] > 0.5
-            correct_neg = probs[neg][:,0] > 0.5
+            logging_output['extra_metrics'] = {}
+            logging_output['extra_metrics']['classification'] = (tp, tn, fp, fn)
 
-            tp = correct_pos.long().sum()
-            tn = correct_neg.long().sum()
-            fp = neg.long().sum() - tn
-            fn = pos.long().sum() - tp
-
-            logging_output['extra_metrics'] = {
-                'classification': (tp.item(), tn.item(), fp.item(), fn.item()),
-                'misclassified': []
-            }
-
-            loss = loss.sum()
-            logging_output['loss'] = loss.item()
+        else:
+            loss, sample_size, logging_output = outputs
 
         return loss, sample_size, logging_output
-
 
     @property
     def target_dictionary(self):

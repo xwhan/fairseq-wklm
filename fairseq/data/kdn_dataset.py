@@ -7,43 +7,13 @@
 
 import numpy as np
 import torch
+import math
+from typing import Tuple
 
 from . import data_utils, FairseqDataset
 
 
-def collate(samples, pad_idx):
 
-    if len(samples) == 0:
-        return {}
-    if not isinstance(samples[0], dict):
-        samples = [s for sample in samples for s in sample]
-
-    batch_text = data_utils.collate_tokens([s['text'] for s in samples], pad_idx, left_pad=False)
-
-    target = torch.cat([s['target'].unsqueeze(0) for s in samples], dim=0)
-    masks = torch.zeros(batch_text.size(0), len(samples[0]['target']), batch_text.size(-1))
-
-    for idx, s in enumerate(samples):
-        offsets = s['ent_offsets']
-        lens = s['ent_lens']
-        for idx_, (offset, length) in enumerate(zip(offsets, lens)):
-            if length == 0:
-                target[idx, idx_] = -1
-                continue
-            masks[idx, idx_, offset:offset+length] = 1 / length
-
-    return {
-        'ntokens': sum(len(s['text']) for s in samples),
-        'net_input': {
-            'sentence': batch_text,
-            'segment': data_utils.collate_tokens(
-                [s['segment'] for s in samples], pad_idx, left_pad=False,
-            ),
-            'entity_masks': masks
-        },
-        'target': target,
-        'nsentences': len(samples),
-    }
 
 
 class KDNDataset(FairseqDataset):
@@ -57,7 +27,24 @@ class KDNDataset(FairseqDataset):
           Default: ``True``
     """
 
-    def __init__(self, dataset, ent_labels, offsets, ent_lens, sizes, dictionary, max_length, max_num_ent, shuffle=False):
+    def __init__(
+        self, 
+        dataset, 
+        ent_labels, 
+        offsets, 
+        ent_lens, 
+        sizes, 
+        dictionary, 
+        max_length,
+        max_num_ent, 
+        shuffle=False,
+        seed=1,
+        masking_ratio=0.15,
+        masking_prob=0.8,
+        random_token_prob=0.1,
+        segment_id=0,
+        use_mlm=False,
+    ):
         self.dataset = dataset
         self.sizes = np.array(sizes)
         self.ent_offsets = offsets
@@ -67,22 +54,149 @@ class KDNDataset(FairseqDataset):
         self.shuffle = shuffle
         self.max_length = max_length
         self.max_num_ent = max_num_ent
+        self.seed = seed
+        self.masking_ratio = masking_ratio
+        self.masking_prob = masking_prob
+        self.random_token_prob = random_token_prob
+        self.segment_id = segment_id
+        self.use_mlm = use_mlm
 
     def __getitem__(self, index):
         block_text = self.dataset[index]
         ent_labels = self.ent_labels[index]
         ent_lens = self.ent_lens[index]
-        ent_offsets = np.array(self.ent_offsets[index]) + 1 # for cls
+        ent_offsets = np.array(self.ent_offsets[index])
 
-        sent, segment = self.prepend_cls(block_text)
+        # sent, segment = self.prepend_cls(block_text)
         ent_labels_padded = ent_labels + [-1] * (self.max_num_ent - len(ent_labels))
         ent_labels_padded = torch.tensor(ent_labels_padded).long()
 
-        # # debug
-        # print(self.debinarize_list(sent.tolist())[ent_offsets[1]:ent_offsets[1] + ent_lens[1]])
-        # import pdb; pdb.set_trace()
+        return {'id': index, 'block': block_text, 'target': ent_labels_padded, 'ent_offsets': ent_offsets, "ent_lens": ent_lens}
 
-        return {'text': sent, 'segment': segment, 'target': ent_labels_padded, 'ent_offsets': ent_offsets, "ent_lens": ent_lens}
+    def collate(self, samples, pad_idx):
+
+        if len(samples) == 0:
+            return {}
+        if not isinstance(samples[0], dict):
+            samples = [s for sample in samples for s in sample]
+
+        with data_utils.numpy_seed(self.seed + samples[0]["id"]):
+            for s in samples:
+                if self.use_mlm:
+                    token_range = (self.vocab.nspecial, len(self.vocab))
+                    masked_blk_one, masked_tgt_one = self._mask_block(s["block"], self.vocab.mask(), self.vocab.pad(), token_range, (s['ent_offsets'], s['ent_lens']))
+                    tokens = np.concatenate([[self.vocab.cls()], masked_blk_one])
+                    segments = np.ones(len(tokens)) * self.segment_id
+                    targets = np.concatenate([[self.vocab.pad()], masked_tgt_one])
+                    s['sent'] = torch.LongTensor(tokens)
+                    s['segment'] = torch.LongTensor(segments)
+                    s["lm_target"] = torch.LongTensor(targets)
+                else:
+                    tokens = np.concatenate([[self.vocab.cls()], s['block']])
+                    segments = np.ones(len(tokens)) * self.segment_id
+                    s['sent'] = torch.LongTensor(tokens)
+                    s['segment'] = torch.LongTensor(segments)
+                    s['lm_target'] = None
+                s['ent_offsets'] = s['ent_offsets'] + 1 # for cls
+
+        batch_text = data_utils.collate_tokens([s['sent'] for s in samples], pad_idx, left_pad=False)
+        batch_seg = data_utils.collate_tokens([s['segment'] for s in samples], pad_idx, left_pad=False)
+        batch_lm_target = data_utils.collate_tokens([s['lm_target'] for s in samples], pad_idx, left_pad=False) if self.use_mlm else None
+
+        target = torch.cat([s['target'].unsqueeze(0) for s in samples], dim=0)
+        masks = torch.zeros(batch_text.size(0), len(samples[0]['target']), batch_text.size(-1))
+
+        for idx, s in enumerate(samples):
+            offsets = s['ent_offsets']
+            lens = s['ent_lens']
+            for idx_, (offset, length) in enumerate(zip(offsets, lens)):
+                if length == 0:
+                    target[idx, idx_] = -1
+                    continue
+
+                # average mask
+                # masks[idx, idx_, offset:offset+length] = 1 / length
+
+                # only use the start tok of of the entity
+                masks[idx, idx_, offset] = 1
+                masks[idx, idx_, offset+length-1] = 2
+
+        return {
+            'ntokens': sum(len(s['sent']) for s in samples),
+            'net_input': {
+                'sentence': batch_text,
+                'segment': batch_seg,
+                'entity_masks': masks
+            },
+            'target': target,
+            'lm_target': batch_lm_target,
+            'nsentences': len(samples),
+        }
+
+    def _mask_block(
+            self,
+            sentence: np.ndarray,
+            mask_idx: int,
+            pad_idx: int,
+            dictionary_token_range: Tuple,
+            entity_info: Tuple,
+    ):
+        """
+        Mask tokens for Masked Language Model training
+        Samples mask_ratio tokens that will be predicted by LM.
+
+        Note:This function may not be efficient enough since we had multiple
+        conversions between np and torch, we can replace them with torch
+        operators later.
+
+        Args:
+            sentence: 1d tensor to be masked
+            mask_idx: index to use for masking the sentence
+            pad_idx: index to use for masking the target for tokens we aren't
+                predicting
+            dictionary_token_range: range of indices in dictionary which can
+                be used for random word replacement
+                (e.g. without special characters)
+            entity_info: entity offsets and lens of masked entities, added to prevent masking of entity tokens
+        Return:
+            masked_sent: masked sentence
+            target: target with words which we are not predicting replaced
+                by pad_idx
+        """
+        masked_sent = np.copy(sentence)
+        sent_length = len(sentence)
+        mask_num = math.ceil(sent_length * self.masking_ratio)
+        mask = np.random.choice(sent_length, mask_num, replace=False)
+        target = np.copy(sentence)
+
+        # entity token index
+        entity_tok_index = []
+        for offset, len_ in zip(entity_info[0], entity_info[1]):
+            for _ in range(len_):
+                entity_tok_index.append(offset + _)
+
+        for i in range(sent_length):
+            if i in mask and (i not in entity_tok_index):
+                rand = np.random.random()
+
+                # replace with mask if probability is less than masking_prob
+                # (Eg: 0.8)
+                if rand < self.masking_prob:
+                    masked_sent[i] = mask_idx
+
+                # replace with random token if probability is less than
+                # masking_prob + random_token_prob (Eg: 0.9)
+                elif rand < (self.masking_prob + self.random_token_prob):
+                    # sample random token from dictionary
+                    masked_sent[i] = (
+                        np.random.randint(
+                            dictionary_token_range[0], dictionary_token_range[1]
+                        )
+                    )
+            else:
+                target[i] = pad_idx
+
+        return masked_sent, target
 
     def prepend_cls(self, sent):
         cls = sent.new_full((1,), self.vocab.cls())
@@ -103,31 +217,11 @@ class KDNDataset(FairseqDataset):
         return len(self.dataset)
 
     def collater(self, samples):
-        return collate(samples, self.vocab.pad())
+        return self.collate(samples, self.vocab.pad())
 
     def get_dummy_batch(self, num_tokens, max_positions, tgt_len=128):
         """Return a dummy batch with a given number of tokens."""
         pass
-        # if isinstance(max_positions, float) or isinstance(max_positions, int):
-        #     tgt_len = min(tgt_len, max_positions)
-        # bsz = num_tokens // tgt_len
-        # sent1 = self.vocab.dummy_sentence(tgt_len + 2)
-        # sent2 = self.vocab.dummy_sentence(tgt_len + 2)
-
-        # sent1[sent1.eq(self.vocab.unk())] = 66
-        # sent2[sent2.eq(self.vocab.unk())] = 66
-        # text, segment = self._join_sents(sent1, sent2)
-
-        # paragraph_mask = torch.zeros(text.shape).byte()
-        # paragraph_mask[sent2.numel():] = 1
-        
-        # target = (torch.tensor([self.vocab.pad()]), torch.tensor([self.vocab.pad()]))
-        # idx_map = [self.vocab.pad()]
-        # token_is_max_context = [0]
-        # return self.collater([
-        #     {'id': i, 'text': text, 'target': target, 'segment': segment, 'paragraph_mask': paragraph_mask, 'squad_ids': 0, 'actual_txt':'dummy', 'idx_map':idx_map,'token_is_max_context':token_is_max_context}
-        #     for i in range(bsz)
-        # ])
 
     def num_tokens(self, index):
         """Return the number of tokens in a sample. This value is used to

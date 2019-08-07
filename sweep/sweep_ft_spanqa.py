@@ -34,8 +34,8 @@ def get_grid(args):
           1e-05, 3e-5, 5e-5
         ], save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_1_70000.pt',
-        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_2_180000.pt',
-            save_dir_key=lambda val: f'bert'),
+        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_last.pt',
+            save_dir_key=lambda val: f'kdn_last'),
         hyperparam('--sentence-avg', True, binary_flag=True),
         hyperparam('--criterion', ['span_qa'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--seed', [3,4], save_dir_key=lambda val: f'seed{val}'),

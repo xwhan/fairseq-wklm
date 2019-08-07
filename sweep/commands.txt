@@ -1,4 +1,0 @@
-# commands
-
-
-python train.py --fp16  ~/OpenBookQA/data/OpenBookQA-V1-Sep2018/Data/Main --task multi_choice_qa --arch finetuning_sentence_classifier --save-interval 1 --max-update 100000 --lr 2e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --num-label 2 --distributed-world-size 1 --max-sentences 32 --optimizer adam

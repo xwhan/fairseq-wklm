@@ -9,40 +9,28 @@ from . import (
 from fairseq import checkpoint_utils
 
 
-@register_model('kdn')
-class KDN(BaseFairseqModel):
+@register_model('re')
+class RE(BaseFairseqModel):
     def __init__(self, args, pretrain_model):
         super().__init__()
 
         self.pretrain_model = pretrain_model
 
-        self.kdn_outputs = nn.Linear(args.model_dim*2, 2) # aggregate CLS and entity tokens
+        self.re_outputs = nn.Linear(args.model_dim*2, args.num_class) # aggregate CLS and entity tokens
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.kdn_outputs.weight.data.normal_(mean=0.0, std=0.02)
-        self.kdn_outputs.bias.data.zero_()
+        self.re_outputs.weight.data.normal_(mean=0.0, std=0.02)
+        self.re_outputs.bias.data.zero_()
 
-    def forward(self, sentence, segment, entity_masks=None, only_states=False):
+    def forward(self, sentence, segment, entity_masks=None):
         """
-        entity_masks: B, |E|, L
-        outputs: B, |E|, 2
+        entity_masks: B, L
+        outputs: B, num_class
         """
-        lm_logits, outputs = self.pretrain_model(sentence, segment)
+        x, _ = self.pretrain_model(sentence, segment)
 
-        x = outputs['inner_states'][-1].transpose(0, 1)
-        x = self.pretrain_model.encoder.layer_norm(self.pretrain_model.encoder.activation_fn(self.pretrain_model.encoder.lm_head_transform_weight(x)))
-
-        if only_states:
-            return x
-
-        # # initial outputs, concatenate cls with average pool
-        # cls_rep = x[:,0,:]
-        # entity_masks = entity_masks.type(x.type())
-        # entity_rep = torch.bmm(entity_masks, x)
-        # entity_rep = torch.cat([cls_rep.unsqueeze(1).expand_as(entity_rep), entity_rep], dim=-1)
-        # entity_logits = self.kdn_outputs(entity_rep)
 
         start_masks = (entity_masks == 1).type(x.type())
         end_masks = (entity_masks == 2).type(x.type())
@@ -50,9 +38,9 @@ class KDN(BaseFairseqModel):
         start_tok_rep = torch.bmm(start_masks, x)
         end_tok_rep = torch.bmm(end_masks, x)
         entity_rep = torch.cat([start_tok_rep, end_tok_rep], dim=-1)
-        entity_logits = self.kdn_outputs(entity_rep)
+        entity_logits = self.re_outputs(entity_rep)
 
-        return entity_logits, lm_logits
+        return entity_logits
 
 
     @staticmethod
@@ -74,18 +62,15 @@ class KDN(BaseFairseqModel):
         assert args.bert_path is not None
         args.short_seq_prob = 0.0
         task = MaskedLMTask(args, dictionary)
-        # models, _ = checkpoint_utils.load_model_ensemble(
-        # [args.bert_path], arg_overrides={
-            # 'remove_head': True, 'share_encoder_input_output_embed': False
-        # }, task=task)
-
         models, _ = checkpoint_utils.load_model_ensemble(
-        [args.bert_path], task=task)
+        [args.bert_path], arg_overrides={
+            'remove_head': True, 'share_encoder_input_output_embed': False
+        }, task=task)
         assert len(models) == 1, 'ensembles are currently not supported for elmo embeddings'
         model = models[0]
-        return KDN(args, model)
+        return RE(args, model)
 
 
-@register_model_architecture('kdn', 'kdn')
+@register_model_architecture('re', 're')
 def base_architecture(args):
     args.model_dim = getattr(args, 'model_dim', 768)

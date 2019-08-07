@@ -1,9 +1,7 @@
-# Copyright (c) 2017-present, Facebook, Inc.
-# All rights reserved.
+# Copyright (c) Facebook, Inc. and its affiliates.
 #
-# This source code is licensed under the license found in the LICENSE file in
-# the root directory of this source tree. An additional grant of patent rights
-# can be found in the PATENTS file in the same directory.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 
 from collections import namedtuple
 import os
@@ -48,7 +46,14 @@ def infer_init_method(args):
                     port=args.distributed_port,
                 )
                 nnodes = int(os.environ.get('SLURM_NNODES'))
-                ntasks_per_node = int(os.environ.get('SLURM_NTASKS_PER_NODE'))
+                ntasks_per_node = os.environ.get('SLURM_NTASKS_PER_NODE')
+                if ntasks_per_node is not None:
+                    ntasks_per_node = int(ntasks_per_node)
+                else:
+                    ntasks = int(os.environ.get('SLURM_NTASKS'))
+                    nnodes = int(os.environ.get('SLURM_NNODES'))
+                    assert ntasks % nnodes == 0
+                    ntasks_per_node = int(ntasks / nnodes)
                 if ntasks_per_node == 1:
                     assert args.distributed_world_size % nnodes == 0
                     gpus_per_node = args.distributed_world_size // nnodes
