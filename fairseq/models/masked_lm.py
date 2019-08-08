@@ -217,6 +217,8 @@ class MaskedLMEncoder(FairseqEncoder):
         x = inner_states[-1].transpose(0, 1)
         x = self.layer_norm(self.activation_fn(self.lm_head_transform_weight(x)))
 
+        task_specific_x = x
+
         pooled_output = self.pooler_activation(self.masked_lm_pooler(sentence_rep))
 
         # project back to size of vocabulary
@@ -236,7 +238,8 @@ class MaskedLMEncoder(FairseqEncoder):
         return x, {
             'inner_states': inner_states,
             'pooled_output': pooled_output,
-            'sentence_logits': sentence_logits
+            'sentence_logits': sentence_logits,
+            'task_specific': task_specific_x
         }
 
     def max_positions(self):

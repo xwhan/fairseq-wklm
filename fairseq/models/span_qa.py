@@ -43,7 +43,6 @@ class SpanQA(BaseFairseqModel):
         parser.add_argument('--bert-path', metavar='PATH', help='path to pretrained bert model')
         parser.add_argument('--model-dim', type=int, metavar='N', help='decoder input dimension')
         parser.add_argument('--last-dropout', type=float, metavar='D', help='dropout before projection')
-        parser.add_argument('--use-kdn', action="store_true")
         # parser.add_argument('--model-dropout', type=float, metavar='D', help='lm dropout')
         # parser.add_argument('--attention-dropout', type=float, metavar='D', help='lm dropout')
         # parser.add_argument('--relu-dropout', type=float, metavar='D', help='lm dropout')
@@ -70,9 +69,18 @@ class SpanQA(BaseFairseqModel):
         # }, task=task)
 
         # load from pretrained kdn model
-        task = KDNTask(args, dictionary)
-        models, _ = checkpoint_utils.load_model_ensemble(
-        [args.bert_path], task=task)
+        if args.use_kdn:
+            print(f'| fine-tuning kdn pretrained model...')
+            task = KDNTask(args, dictionary)
+            models, _ = checkpoint_utils.load_model_ensemble(
+            [args.bert_path], task=task)
+        else:
+            print(f'| fine-tuning bert pretrained model...')
+            task = MaskedLMTask(args, dictionary)
+            models, _ = checkpoint_utils.load_model_ensemble(
+            [args.bert_path], arg_overrides={
+                'remove_head': True, 'share_encoder_input_output_embed': False
+            }, task=task)
 
 
         assert len(models) == 1, 'ensembles are currently not supported for elmo embeddings'

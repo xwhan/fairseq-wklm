@@ -45,13 +45,12 @@ class KDNTask(FairseqTask):
         parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/webq_qa')
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-labels', type=int, default=2, help='number of labels')
-        parser.add_argument('--ignore-index', type=int, default=-1)
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
 
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
-        self.ignore_index = args.ignore_index
+        self.ignore_index = -1
         self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
         self.max_length = args.max_length
         self.use_mlm = args.use_mlm
@@ -78,14 +77,14 @@ class KDNTask(FairseqTask):
         loaded_datasets = [[]]
         stop = False
 
-        binarized_data_path = os.path.join(self.args.data, "binarized")
-        tokenized_data_path = os.path.join(self.args.data, "processed-splits")
+        binarized_data_path = os.path.join(self.args.data, "binarized-v2")
+        tokenized_data_path = os.path.join(self.args.data, "processed-splits-v2")
         
         ent_offsets = []
         ent_lens = []
         ent_lbls = []
 
-        epoch = epoch % 100
+        epoch = epoch % 50
 
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
@@ -142,6 +141,8 @@ class KDNTask(FairseqTask):
             sizes = np.concatenate([ds.sizes for ds in loaded_datasets[0]])
 
         max_num_ent = max([len(_) for _ in ent_offsets]) # max num of entitites per block
+
+        print(f'| max number of entitites {max_num_ent}')
 
         assert len(dataset) == len(ent_lbls)
         shuffle = True if split == 'train' else False

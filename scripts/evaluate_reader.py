@@ -23,7 +23,7 @@ from official_eval import f1_score, exact_match_score, metric_max_over_ground_tr
 
 def _load_models(args, task):
     models, _model_args = checkpoint_utils.load_model_ensemble(
-        args.model_path.split(':'),
+        args.model_path.split(':'), arg_overrides=vars(args),
         task=task,
     )
     for model in models:
@@ -236,7 +236,6 @@ def collate(samples):
 
 def main(args):
     task = tasks.setup_task(args)
-
     model = _load_models(args, task)
 
     model.cuda()
@@ -349,9 +348,7 @@ def metrics(args):
     print(f'em score {np.mean(em_scores)}')   
 
 if __name__ == '__main__':
-    parser = options.get_parser('Trainer', 'span_qa')
-    options.add_dataset_args(parser)
-    parser.add_argument('--criterion', default='span_qa')
+    parser = options.get_training_parser('span_qa')
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
     parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json', type=str)
 
@@ -362,8 +359,12 @@ if __name__ == '__main__':
 
     parser.add_argument('--eval-bsz', default=32, type=int)
     parser.add_argument('--save', action='store_true')
+
+    # args = options.parse_args_and_arch(parser)
     args = options.parse_args_and_arch(parser)
-    args = parser.parse_args()
+    # args = parser.parse_args()
+
+    print(args)
 
     main(args)
 

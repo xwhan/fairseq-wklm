@@ -29,12 +29,11 @@ def get_grid(args):
         hyperparam('--max-update', [
             max_update
         ], save_dir_key=lambda val: f'mxup{val}'),
+        hyperparam("--max-epoch", 15)
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
-        hyperparam('--lr', [
-          1e-05, 3e-5, 5e-5
-        ], save_dir_key=lambda val: f'lr{val}'),
+        hyperparam('--lr', 1e-5, save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_1_70000.pt',
-        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_last.pt',
+        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_best.pt',
             save_dir_key=lambda val: f'kdn_last'),
         hyperparam('--sentence-avg', True, binary_flag=True),
         hyperparam('--criterion', ['span_qa'], save_dir_key=lambda val: f'crs_ent'),
@@ -47,6 +46,7 @@ def get_grid(args):
         hyperparam('--min-lr', 1e-9),
         hyperparam("--ddp-backend", "no_c10d"),
         hyperparam("--use-kdn")
+        hyperparam("--tensorboard-logdir", "/checkpoint/xwhan/reader_webq")
 
         # hyperparam('--restore-file', "/checkpoint/xwhan/2019-07-11/reader_squad.span_qa.mxup61875.adam.lr1e-05.bert.crs_ent.seed4.bsz8.ngpu1/checkpoint_best.pt")
     ]

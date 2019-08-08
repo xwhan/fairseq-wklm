@@ -65,7 +65,9 @@ class KDNDataset(FairseqDataset):
         block_text = self.dataset[index]
         ent_labels = self.ent_labels[index]
         ent_lens = self.ent_lens[index]
-        ent_offsets = np.array(self.ent_offsets[index])
+        ent_offsets = self.ent_offsets[index]
+
+        assert len(ent_labels) == len(ent_lens) == len(ent_offsets)
 
         # sent, segment = self.prepend_cls(block_text)
         ent_labels_padded = ent_labels + [-1] * (self.max_num_ent - len(ent_labels))
@@ -97,7 +99,7 @@ class KDNDataset(FairseqDataset):
                     s['sent'] = torch.LongTensor(tokens)
                     s['segment'] = torch.LongTensor(segments)
                     s['lm_target'] = None
-                s['ent_offsets'] = s['ent_offsets'] + 1 # for cls
+                s['ent_offsets'] = [ii+1 for ii in s['ent_offsets']] # for cls
 
         batch_text = data_utils.collate_tokens([s['sent'] for s in samples], pad_idx, left_pad=False)
         batch_seg = data_utils.collate_tokens([s['segment'] for s in samples], pad_idx, left_pad=False)

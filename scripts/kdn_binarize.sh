@@ -7,9 +7,9 @@
 
 
 
-for shard_id in $(seq 11 168)
+for shard_id in $(seq 0 49)
     do
-        sbatch ./scripts_ann/run.ann_$shard_id.preprocess.slrm &
+        sbatch ./scripts_pre/run.process_$shard_id.preprocess.slrm &
 done
 
 

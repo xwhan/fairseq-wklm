@@ -47,6 +47,10 @@ class SpanQATask(FairseqTask):
         parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/webq_qa')
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--max-query-length', type=int, default=18)
+        parser.add_argument('--use-kdn', action="store_true")
+
+        # kdn parameters
+        parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
 
     def __init__(self, args, dictionary):
         super().__init__(args)

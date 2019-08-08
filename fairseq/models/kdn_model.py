@@ -16,7 +16,7 @@ class KDN(BaseFairseqModel):
 
         self.pretrain_model = pretrain_model
 
-        self.kdn_outputs = nn.Linear(args.model_dim*2, 2) # aggregate CLS and entity tokens
+        self.kdn_outputs = nn.Linear(args.model_dim, 2) # aggregate CLS and entity tokens
 
         self.reset_parameters()
 
@@ -31,8 +31,7 @@ class KDN(BaseFairseqModel):
         """
         lm_logits, outputs = self.pretrain_model(sentence, segment)
 
-        x = outputs['inner_states'][-1].transpose(0, 1)
-        x = self.pretrain_model.encoder.layer_norm(self.pretrain_model.encoder.activation_fn(self.pretrain_model.encoder.lm_head_transform_weight(x)))
+        x = outputs['task_specific']
 
         if only_states:
             return x
@@ -44,12 +43,13 @@ class KDN(BaseFairseqModel):
         # entity_rep = torch.cat([cls_rep.unsqueeze(1).expand_as(entity_rep), entity_rep], dim=-1)
         # entity_logits = self.kdn_outputs(entity_rep)
 
+        # us
         start_masks = (entity_masks == 1).type(x.type())
         end_masks = (entity_masks == 2).type(x.type())
-
         start_tok_rep = torch.bmm(start_masks, x)
         end_tok_rep = torch.bmm(end_masks, x)
-        entity_rep = torch.cat([start_tok_rep, end_tok_rep], dim=-1)
+        # entity_rep = torch.cat([start_tok_rep, end_tok_rep], dim=-1)
+        entity_rep = start_tok_rep
         entity_logits = self.kdn_outputs(entity_rep)
 
         return entity_logits, lm_logits
@@ -79,8 +79,7 @@ class KDN(BaseFairseqModel):
             # 'remove_head': True, 'share_encoder_input_output_embed': False
         # }, task=task)
 
-        models, _ = checkpoint_utils.load_model_ensemble(
-        [args.bert_path], task=task)
+        models, _ = checkpoint_utils.load_model_ensemble([args.bert_path], task=task)
         assert len(models) == 1, 'ensembles are currently not supported for elmo embeddings'
         model = models[0]
         return KDN(args, model)
