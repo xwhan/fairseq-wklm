@@ -295,7 +295,8 @@ def main(args):
                 end_preds.append(end)
 
     if args.save:
-        with open(args.save_path, 'w') as g:
+        save_path = os.path.join(args.data, args.save_name)
+        with open(save_path, 'w') as g:
             json.dump(qid2results, g)
 
 
@@ -322,7 +323,8 @@ def main(args):
     print(f'em score {np.mean(em_scores)}')
 
 def combine(s1, s2, alpha=0.1):
-    return s1 * alpha + s2 * (1 - alpha) 
+    # return s1 * alpha + s2 * (1 - alpha)
+    return s1 # use answer score
 
 def metrics(args):
     prediction = json.load(open('/private/home/xwhan/dataset/webq_qa/prediction.json'))
@@ -355,7 +357,7 @@ if __name__ == '__main__':
     parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/test.json')
 
     # save the prediction file
-    parser.add_argument('--save-path', default='/private/home/xwhan/dataset/webq_qa/prediction_kdn.json')
+    parser.add_argument('--save-name', default='prediction_kdn.json')
 
     parser.add_argument('--eval-bsz', default=32, type=int)
     parser.add_argument('--save', action='store_true')
@@ -363,8 +365,6 @@ if __name__ == '__main__':
     # args = options.parse_args_and_arch(parser)
     args = options.parse_args_and_arch(parser)
     # args = parser.parse_args()
-
-    print(args)
 
     main(args)
 

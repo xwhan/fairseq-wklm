@@ -53,6 +53,7 @@ def process_file(folder, output, use_ent_marker=False):
         e2_start_out = open(os.path.join(output, split, 'e2_start.txt'), 'w')
         e1_len_out = open(os.path.join(output, split, 'e1_len.txt'), 'w')
         e2_len_out = open(os.path.join(output, split, 'e2_len.txt'), 'w')
+        ids_out = open(os.path.join(output, split, 'ids.txt'), 'w')
 
         for item in data:
             sent_toks = item['token']
@@ -66,25 +67,25 @@ def process_file(folder, output, use_ent_marker=False):
                     wp_toks.append(sub_tok)
             
             e1_start = orig_to_tok_index[item['subj_start']] 
-            e1_end = orig_to_tok_index[item['subj_end'] + 1] if item['subj_end'] + 1 < len(orig_to_tok_index) else len(orig_to_tok_index)
+            e1_end = orig_to_tok_index[item['subj_end'] + 1] if item['subj_end'] + 1 < len(orig_to_tok_index) else len(orig_to_tok_index) # the wp tok position after the entity
             e2_start = orig_to_tok_index[item['obj_start']]
             e2_end = orig_to_tok_index[item['obj_end'] + 1] if item['obj_end'] + 1 < len(orig_to_tok_index) else len(orig_to_tok_index)
 
             e1_len = e1_end - e1_start
             e2_len = e2_end - e2_start
 
-            if self.use_ent_marker:
+            if use_ent_marker:
                 e1_len += 2
                 e2_len += 2
                 if e1_start < e2_start:
-                    assert e1_end < e2_start
-                    wp_toks = wp_toks[:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end+1] + [e1_end_marker] + wp_toks[e1_end+1:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end+1] + [e2_end_marker] + wp_toks[e2_end+1:]
+                    assert e1_end <= e2_start
+                    wp_toks = wp_toks[:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:]
                     e1_end += 1
                     e2_start += 2
                     e2_end += 3
                 else:
-                    assert e2_end < e1_start
-                    wp_toks = wp_toks[:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end+1] + [e2_end_marker] + wp_toks[e2_end+1:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end+1] + [e1_end_marker] + wp_toks[e1_end+1:]
+                    assert e2_end <= e1_start
+                    wp_toks = wp_toks[:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:]
                     e2_end += 1
                     e1_start += 2
                     e1_end += 3
@@ -96,6 +97,7 @@ def process_file(folder, output, use_ent_marker=False):
             print(e2_start, file=e2_start_out)
             print(e1_len, file=e1_len_out)
             print(e2_len, file=e2_len_out)
+            print(item['id'], file=ids_out)
 
 
 if __name__ == '__main__':

@@ -47,12 +47,17 @@ class RETask(FairseqTask):
         parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/tacred')
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-class', type=int, default=42)
+        parser.add_argument('--use-kdn', action="store_true")
+
+        # kdn parameters
+        parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
 
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
         self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
         self.ignore_index = -1
+        self.max_length = args.max_length
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -83,7 +88,7 @@ class RETask(FairseqTask):
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
 
-            path_sent = os.path.join(binarized_data_path, split_k)
+            path_sent = os.path.join(binarized_data_path, split_k, split_k)
 
             for path, datasets in zip([path_sent], loaded_datasets):
                 if IndexedDataset.exists(path):

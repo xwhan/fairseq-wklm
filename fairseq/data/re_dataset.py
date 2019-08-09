@@ -48,7 +48,6 @@ def collate(samples, pad_idx):
 
 class REDataset(FairseqDataset):
     """
-
     Args:
         dataset (torch.utils.data.Dataset): dataset to wrap
         sizes (List[int]): sentence lengths
@@ -77,6 +76,14 @@ class REDataset(FairseqDataset):
         e2_offset = self.e2_offsets[index] + 1
 
         sent, segment = self.prepend_cls(block_text)
+
+        # truncate the sample
+        item_len = sent.size(0)
+        if item_len > self.max_length:
+            sent = sent[:self.max_length]
+            segment = segment[:self.max_length]
+            e1_offset = min(e1_offset, self.max_length - 1)
+            e2_offset = min(e2_offset, self.max_length - 1)
 
         return {'text': sent, 'segment': segment, 'target': rel_label, 'e1_offset': e1_offset, 'e2_offset': e2_offset}
 

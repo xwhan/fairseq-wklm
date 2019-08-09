@@ -43,7 +43,7 @@ class KDN(BaseFairseqModel):
         # entity_rep = torch.cat([cls_rep.unsqueeze(1).expand_as(entity_rep), entity_rep], dim=-1)
         # entity_logits = self.kdn_outputs(entity_rep)
 
-        # us
+        # no pooling
         start_masks = (entity_masks == 1).type(x.type())
         end_masks = (entity_masks == 2).type(x.type())
         start_tok_rep = torch.bmm(start_masks, x)
@@ -72,12 +72,7 @@ class KDN(BaseFairseqModel):
         dictionary = task.dictionary
 
         assert args.bert_path is not None
-        args.short_seq_prob = 0.0
         task = MaskedLMTask(args, dictionary)
-        # models, _ = checkpoint_utils.load_model_ensemble(
-        # [args.bert_path], arg_overrides={
-            # 'remove_head': True, 'share_encoder_input_output_embed': False
-        # }, task=task)
 
         models, _ = checkpoint_utils.load_model_ensemble([args.bert_path], task=task)
         assert len(models) == 1, 'ensembles are currently not supported for elmo embeddings'

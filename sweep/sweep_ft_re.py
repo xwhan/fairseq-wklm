@@ -18,37 +18,33 @@ def get_filter_str(val):
     s = f'cf{f[0][1]}'
     return s
 
-max_update= (100000 // 8) * 15
 
 def get_grid(args):
     return [
         hyperparam('--save-interval', 1),
-        # hyperparam('--no-epoch-checkpoints'),
-        hyperparam('--arch', 'span_qa', save_dir_key=lambda val: val),
-        hyperparam('--task', 'span_qa'),
-        hyperparam('--max-update', [
-            max_update
-        ], save_dir_key=lambda val: f'mxup{val}'),
-        hyperparam("--max-epoch", 15)
+        hyperparam('--arch', 're', save_dir_key=lambda val: val),
+        hyperparam('--task', 're'),
+        hyperparam("--max-epoch", 10),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
         hyperparam('--lr', 1e-5, save_dir_key=lambda val: f'lr{val}'),
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-04/kdn_initial_all.adam.bert.crs_ent.seed3.bsz8.0.01.lr0.0001.beta998.warmup10000.ngpu8/checkpoint_1_70000.pt',
-        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_best.pt',
-            save_dir_key=lambda val: f'kdn_last'),
+
+        hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt', save_dir_key=lambda val: f'bert'),
+
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_best.pt',save_dir_key=lambda val: f'kdn_best'),
+
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_last.pt', save_dir_key=lambda val: f'kdn_last'),
         hyperparam('--sentence-avg', True, binary_flag=True),
-        hyperparam('--criterion', ['span_qa'], save_dir_key=lambda val: f'crs_ent'),
+        hyperparam('--criterion', ['cross_entropy'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--seed', [3,4], save_dir_key=lambda val: f'seed{val}'),
         hyperparam('--skip-invalid-size-inputs-valid-test'),
         hyperparam('--max-sentences', 8, save_dir_key=lambda val: f'bsz{val}'),
         hyperparam('--log-format', 'json'),
-        # hyperparam('--log-interval', 1000),
         hyperparam('--model-dim', 768),
         hyperparam('--min-lr', 1e-9),
         hyperparam("--ddp-backend", "no_c10d"),
-        hyperparam("--use-kdn")
+        # hyperparam("--use-kdn"),
         hyperparam('--fp16', True, binary_flag=True),
 
-        # hyperparam('--restore-file', "/checkpoint/xwhan/2019-07-11/reader_squad.span_qa.mxup61875.adam.lr1e-05.bert.crs_ent.seed4.bsz8.ngpu1/checkpoint_best.pt")
     ]
 
 
