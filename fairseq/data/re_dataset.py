@@ -56,7 +56,7 @@ class REDataset(FairseqDataset):
           Default: ``True``
     """
 
-    def __init__(self, dataset, rel_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, sizes, dictionary, max_length, shuffle=False):
+    def __init__(self, dataset, rel_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, sizes, dictionary, max_length, shuffle=False, use_marker=False):
         self.dataset = dataset
         self.sizes = np.array(sizes)
         self.e1_offsets = e1_offsets
@@ -67,15 +67,59 @@ class REDataset(FairseqDataset):
         self.vocab = dictionary
         self.shuffle = shuffle
         self.max_length = max_length
+        self.use_marker = use_marker
 
     def __getitem__(self, index):
         block_text = self.dataset[index]
         rel_label = self.rel_labels[index]
+        e1_offset = self.e1_offsets[index]
+        e2_offset = self.e2_offsets[index]
+        e1_len = self.e1_lens[index]
+        e2_len = self.e2_lens[index]
+
+        e1_start_marker = self.vocab.index("[unused0]")
+        e1_end_marker = self.vocab.index("[unused1]")
+        e2_start_marker = self.vocab.index("[unused2]")
+        e2_end_marker = self.vocab.index("[unused3]")
+
+        e1_end = e1_offset + e1_len
+        e2_end = e2_offset + e2_len
+
+        block_text = block_text.tolist()
+
+        if self.use_marker:
+            if e1_offset < e2_offset:
+                assert e1_end <= e2_offset
+                block_text = block_text[:e1_offset] + \
+                [e1_start_marker] + \
+                block_text[e1_offset:e1_end] + \
+                [e1_end_marker] +  \
+                block_text[e1_end:e2_offset] + \
+                [e2_start_marker] + \
+                block_text[e2_offset:e2_end] + \
+                [e2_end_marker] + \
+                block_text[e2_end:]
+            else:
+                assert e2_end <= e1_offset
+                block_text = block_text[:e2_offset] + \
+                [e2_start_marker] + \
+                block_text[e2_offset:e2_end] + \
+                [e2_end_marker] + \
+                block_text[e2_end:e1_offset] + \
+                [e1_start_marker] + \
+                block_text[e1_offset:e1_end] + \
+                [e1_end_marker] + \
+                block_text[e1_end:]   
 
         e1_offset = self.e1_offsets[index] + 1 # for cls
         e2_offset = self.e2_offsets[index] + 1
 
+        block_text = torch.LongTensor(block_text)
+
         sent, segment = self.prepend_cls(block_text)
+
+        # check offset
+        # import pdb; pdb.set_trace()
 
         # truncate the sample
         item_len = sent.size(0)
@@ -111,26 +155,6 @@ class REDataset(FairseqDataset):
     def get_dummy_batch(self, num_tokens, max_positions, tgt_len=128):
         """Return a dummy batch with a given number of tokens."""
         pass
-        # if isinstance(max_positions, float) or isinstance(max_positions, int):
-        #     tgt_len = min(tgt_len, max_positions)
-        # bsz = num_tokens // tgt_len
-        # sent1 = self.vocab.dummy_sentence(tgt_len + 2)
-        # sent2 = self.vocab.dummy_sentence(tgt_len + 2)
-
-        # sent1[sent1.eq(self.vocab.unk())] = 66
-        # sent2[sent2.eq(self.vocab.unk())] = 66
-        # text, segment = self._join_sents(sent1, sent2)
-
-        # paragraph_mask = torch.zeros(text.shape).byte()
-        # paragraph_mask[sent2.numel():] = 1
-        
-        # target = (torch.tensor([self.vocab.pad()]), torch.tensor([self.vocab.pad()]))
-        # idx_map = [self.vocab.pad()]
-        # token_is_max_context = [0]
-        # return self.collater([
-        #     {'id': i, 'text': text, 'target': target, 'segment': segment, 'paragraph_mask': paragraph_mask, 'squad_ids': 0, 'actual_txt':'dummy', 'idx_map':idx_map,'token_is_max_context':token_is_max_context}
-        #     for i in range(bsz)
-        # ])
 
     def num_tokens(self, index):
         """Return the number of tokens in a sample. This value is used to
@@ -152,8 +176,6 @@ class REDataset(FairseqDataset):
             indices = np.arange(len(self))
         return indices
 
-        # indices = indices[np.argsort(self.sizes1[indices], kind='mergesort')]
-        # return indices[np.argsort(self.sizes2[indices], kind='mergesort')]
 
     def prefetch(self, indices):
         self.dataset.prefetch(indices)

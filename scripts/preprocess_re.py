@@ -37,11 +37,11 @@ def process_file(folder, output, use_ent_marker=False):
     tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt')
     relation2id = json.load(open(os.path.join(folder, "relation2id.json")))
 
-    if use_ent_marker:
-        e1_start_marker = "[unused0]"
-        e1_end_marker = "[unused1]"
-        e2_start_marker = "[unused2]"
-        e2_end_marker = "[unused3]"
+    # if use_ent_marker:
+    #     e1_start_marker = "[unused0]"
+    #     e1_end_marker = "[unused1]"
+    #     e2_start_marker = "[unused2]"
+    #     e2_end_marker = "[unused3]"
 
     for split in  ['train', 'valid', 'test']:
         file_path = os.path.join(folder, f'{split}.json')
@@ -74,21 +74,21 @@ def process_file(folder, output, use_ent_marker=False):
             e1_len = e1_end - e1_start
             e2_len = e2_end - e2_start
 
-            if use_ent_marker:
-                e1_len += 2
-                e2_len += 2
-                if e1_start < e2_start:
-                    assert e1_end <= e2_start
-                    wp_toks = wp_toks[:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:]
-                    e1_end += 1
-                    e2_start += 2
-                    e2_end += 3
-                else:
-                    assert e2_end <= e1_start
-                    wp_toks = wp_toks[:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:]
-                    e2_end += 1
-                    e1_start += 2
-                    e1_end += 3
+            # if use_ent_marker:
+            #     e1_len += 2
+            #     e2_len += 2
+            #     if e1_start < e2_start:
+            #         assert e1_end <= e2_start
+            #         wp_toks = wp_toks[:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:]
+            #         e1_end += 1
+            #         e2_start += 2
+            #         e2_end += 3
+            #     else:
+            #         assert e2_end <= e1_start
+            #         wp_toks = wp_toks[:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:]
+            #         e2_end += 1
+            #         e1_start += 2
+            #         e1_end += 3
 
             lbl = relation2id[lbl_rel]
             print(" ".join(wp_toks), file=sent_out)
@@ -99,6 +99,5 @@ def process_file(folder, output, use_ent_marker=False):
             print(e2_len, file=e2_len_out)
             print(item['id'], file=ids_out)
 
-
 if __name__ == '__main__':
-    process_file("/private/home/xwhan/dataset/tacred/raw", "/private/home/xwhan/dataset/tacred/processed-splits", use_ent_marker=True)
+    process_file("/private/home/xwhan/dataset/tacred/raw", "/private/home/xwhan/dataset/tacred/processed-splits")

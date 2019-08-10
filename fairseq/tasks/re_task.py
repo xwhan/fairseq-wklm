@@ -48,6 +48,7 @@ class RETask(FairseqTask):
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-class', type=int, default=42)
         parser.add_argument('--use-kdn', action="store_true")
+        parser.add_argument('--use-marker', action="store_true")
 
         # kdn parameters
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
@@ -58,6 +59,7 @@ class RETask(FairseqTask):
         self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
         self.ignore_index = -1
         self.max_length = args.max_length
+        self.use_marker = args.use_marker
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -150,7 +152,6 @@ class RETask(FairseqTask):
             if not combine:
                 break
 
-
         if len(loaded_datasets[0]) == 1:
             dataset = loaded_datasets[0][0]
             sizes = dataset.sizes
@@ -160,11 +161,11 @@ class RETask(FairseqTask):
 
         assert len(dataset) == len(loaded_labels)
 
-        shuffle = True if split == 'train' else False
+        shuffle = False if split == 'train' else False
 
         self.datasets[split] = REDataset(
             dataset, loaded_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, sizes, self.dictionary,
-            self.args.max_length, shuffle
+            self.args.max_length, shuffle, self.use_marker
         )
 
     def extra_meters(self):

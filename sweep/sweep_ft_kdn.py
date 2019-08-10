@@ -32,7 +32,7 @@ def get_grid(args):
         hyperparam('--criterion', 'kdn_loss', save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--log-format', 'json'),
         hyperparam('--seed', 3, save_dir_key=lambda val: f'seed{val}'),
-        hyperparam('--max-sentences', 8, save_dir_key=lambda val: f'bsz{val}'),
+        hyperparam('--max-sentences', 4, save_dir_key=lambda val: f'bsz{val}'),
         hyperparam("--weight-decay", "0.01", save_dir_key=lambda val: val),
         hyperparam('--lr', 1e-5, save_dir_key=lambda val: f'lr{val}'),
         # hyperparam("--adam-betas", "(0.9, 0.999)", save_dir_key=lambda val: "beta998"),

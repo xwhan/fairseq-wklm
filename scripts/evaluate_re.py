@@ -114,6 +114,9 @@ class REDataset(Dataset):
         e2_offset = raw_sample['e2_start']
         lbl = raw_sample['lbl']
 
+        # assert sent[e1_offset] == "[unused0]"
+        # assert sent[e2_offset] == "[unused2]"
+
         text = torch.LongTensor(self.binarize_list(sent))
         e1_offset += 1
         e2_offset += 1
@@ -219,8 +222,8 @@ class REDataset(Dataset):
 
 if __name__ == '__main__':
     parser = options.get_training_parser('re')
-    parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-09/re_bert_best.re.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/tacred/processed-splits/valid', type=str)
+    parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-09/re_bert_best.re.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_last.pt')
+    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/tacred/processed-splits/test', type=str)
     parser.add_argument('--eval-bsz', default=32, type=int)
     args = options.parse_args_and_arch(parser)
 
