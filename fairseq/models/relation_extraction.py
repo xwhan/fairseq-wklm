@@ -44,9 +44,8 @@ class RE(BaseFairseqModel):
 
         start_masks = (entity_masks == 1).type(x.type())
         end_masks = (entity_masks == 2).type(x.type())
-
-        e1_tok_rep = torch.bmm(start_masks.unsqueeze(1), x).squeeze(1)
-        e2_tok_rep = torch.bmm(end_masks.unsqueeze(1), x).squeeze(1)
+        # e1_tok_rep = torch.bmm(start_masks.unsqueeze(1), x).squeeze(1)
+        # e2_tok_rep = torch.bmm(end_masks.unsqueeze(1), x).squeeze(1)
         # entity_rep = self.last_dropout(torch.cat([e1_tok_rep, e2_tok_rep], dim=-1))
 
         entity_rep = self.last_dropout(cls_rep)

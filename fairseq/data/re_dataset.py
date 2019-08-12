@@ -56,7 +56,7 @@ class REDataset(FairseqDataset):
           Default: ``True``
     """
 
-    def __init__(self, dataset, rel_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, sizes, dictionary, max_length, shuffle=False, use_marker=False):
+    def __init__(self, dataset, rel_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, e1_types, e2_types, sizes, dictionary, max_length, shuffle=False, use_marker=False, use_ner=False):
         self.dataset = dataset
         self.sizes = np.array(sizes)
         self.e1_offsets = e1_offsets
@@ -68,55 +68,81 @@ class REDataset(FairseqDataset):
         self.shuffle = shuffle
         self.max_length = max_length
         self.use_marker = use_marker
+        self.use_ner = use_ner
+        self.e1_types = e1_types
+        self.e2_types = e2_types
 
     def __getitem__(self, index):
         block_text = self.dataset[index]
         rel_label = self.rel_labels[index]
-        e1_offset = self.e1_offsets[index]
-        e2_offset = self.e2_offsets[index]
+        e1_offset_orig = self.e1_offsets[index]
+        e2_offset_orig = self.e2_offsets[index]
         e1_len = self.e1_lens[index]
         e2_len = self.e2_lens[index]
 
-        e1_start_marker = self.vocab.index("[unused0]")
-        e1_end_marker = self.vocab.index("[unused1]")
-        e2_start_marker = self.vocab.index("[unused2]")
-        e2_end_marker = self.vocab.index("[unused3]")
+        e1_end = e1_offset_orig + e1_len
+        e2_end = e2_offset_orig + e2_len
 
-        e1_end = e1_offset + e1_len
-        e2_end = e2_offset + e2_len
+        e1_type = self.e1_types[index]
+        e2_type = self.e2_types[index]
 
         block_text = block_text.tolist()
 
         if self.use_marker:
-            if e1_offset < e2_offset:
-                assert e1_end <= e2_offset
-                block_text = block_text[:e1_offset] + \
+            e1_start_marker = self.vocab.index("[unused0]")
+            e1_end_marker = self.vocab.index("[unused1]")
+            e2_start_marker = self.vocab.index("[unused2]")
+            e2_end_marker = self.vocab.index("[unused3]")
+            if e1_offset_orig < e2_offset_orig:
+                assert e1_end <= e2_offset_orig
+                block_text = block_text[:e1_offset_orig] + \
                 [e1_start_marker] + \
-                block_text[e1_offset:e1_end] + \
+                block_text[e1_offset_orig:e1_end] + \
                 [e1_end_marker] +  \
-                block_text[e1_end:e2_offset] + \
+                block_text[e1_end:e2_offset_orig] + \
                 [e2_start_marker] + \
-                block_text[e2_offset:e2_end] + \
+                block_text[e2_offset_orig:e2_end] + \
                 [e2_end_marker] + \
                 block_text[e2_end:]
 
-                e1_offset += 1 
-                e2_offset += 3
+                e1_offset = 1 + e1_offset_orig 
+                e2_offset = 3 + e2_offset_orig
 
             else:
-                assert e2_end <= e1_offset
-                block_text = block_text[:e2_offset] + \
+                assert e2_end <= e1_offset_orig
+                block_text = block_text[:e2_offset_orig] + \
                 [e2_start_marker] + \
-                block_text[e2_offset:e2_end] + \
+                block_text[e2_offset_orig:e2_end] + \
                 [e2_end_marker] + \
-                block_text[e2_end:e1_offset] + \
+                block_text[e2_end:e1_offset_orig] + \
                 [e1_start_marker] + \
-                block_text[e1_offset:e1_end] + \
+                block_text[e1_offset_orig:e1_end] + \
                 [e1_end_marker] + \
                 block_text[e1_end:]
+                e2_offset = 1 + e2_offset_orig
+                e1_offset = 3 + e1_offset_orig
 
-                e2_offset += 1
-                e1_offset += 3
+        elif self.use_ner:
+            e1_type_id = self.vocab.index(e1_type)
+            e2_type_id = self.vocab.index(e2_type)
+            if e1_offset_orig < e2_offset_orig:
+                assert e1_end <= e2_offset_orig
+                e1_offset = 1 + e1_offset_orig
+                e2_offset = 1 + len(block_text[:e1_offset_orig] + [e1_type_id] + block_text[e1_end:e2_offset_orig])
+                block_text = block_text[:e1_offset_orig] + \
+                [e1_type_id] + \
+                block_text[e1_end:e2_offset_orig] + \
+                [e2_type_id] + \
+                block_text[e2_end:]
+            else:
+                assert e2_end <= e1_offset_orig
+                e2_offset = 1 + e2_offset_orig
+                e1_offset = 1 + len(block_text[:e2_offset_orig] + [e2_type_id] + block_text[e2_end:e1_offset_orig])
+                block_text = block_text[:e2_offset_orig] + \
+                [e2_type_id] + \
+                block_text[e2_end:e1_offset_orig] + \
+                [e1_type_id] + \
+                block_text[e1_end:]
 
         block_text = torch.LongTensor(block_text)
         sent, segment = self.prepend_cls(block_text)
@@ -124,6 +150,9 @@ class REDataset(FairseqDataset):
         if self.use_marker:
             assert self.debinarize_list(sent.tolist())[e1_offset] == '[unused0]'
             assert self.debinarize_list(sent.tolist())[e2_offset] == '[unused2]'
+        elif self.use_ner:
+            assert "unused" in self.debinarize_list(sent.tolist())[e1_offset]
+            assert "unused" in self.debinarize_list(sent.tolist())[e2_offset]
 
         # truncate the sample
         item_len = sent.size(0)

@@ -49,6 +49,7 @@ class RETask(FairseqTask):
         parser.add_argument('--num-class', type=int, default=42)
         parser.add_argument('--use-kdn', action="store_true")
         parser.add_argument('--use-marker', action="store_true")
+        parser.add_argument('--use-ner', action='store_true')
         parser.add_argument('--last-drop', type=float, default=0.0, help='dropout before projection')
 
         # kdn parameters
@@ -62,6 +63,9 @@ class RETask(FairseqTask):
         self.ignore_index = -1
         self.max_length = args.max_length
         self.use_marker = args.use_marker
+        self.use_ner = args.use_ner
+
+        assert not (self.use_marker and self.use_ner)
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -135,6 +139,20 @@ class RETask(FairseqTask):
                     lbl = int(line.strip())
                     e1_lens.append(lbl)
 
+            e1_type = []
+            with open(os.path.join(raw_path, 'e1_type.txt'), 'r') as lbl_f:
+                lines = lbl_f.readlines()
+                for line in lines:
+                    lbl = line.strip()
+                    e1_type.append(lbl)
+
+            e2_type = []
+            with open(os.path.join(raw_path, 'e2_type.txt'), 'r') as lbl_f:
+                lines = lbl_f.readlines()
+                for line in lines:
+                    lbl = line.strip()
+                    e2_type.append(lbl)
+
             e2_lens = []
             with open(os.path.join(raw_path, 'e2_len.txt'), 'r') as lbl_f:
                 lines = lbl_f.readlines()
@@ -166,8 +184,8 @@ class RETask(FairseqTask):
         shuffle = True if split == 'train' else False
 
         self.datasets[split] = REDataset(
-            dataset, loaded_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, sizes, self.dictionary,
-            self.args.max_length, shuffle, self.use_marker
+            dataset, loaded_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, e1_type, e2_type, sizes, self.dictionary,
+            self.args.max_length, shuffle, use_ner=self.use_ner, use_marker=self.use_marker
         )
 
     def extra_meters(self):

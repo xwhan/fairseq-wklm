@@ -49,12 +49,13 @@ def process_file(folder, output, lower=True):
 
     tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt', do_lower_case=lower)
     relation2id = json.load(open(os.path.join(folder, "relation2id.json")))
+    special_tokens = {"[e1_start]": "[unused0]", "[e1_end]":"[unused1]", "[e2_start]": "[unused2]", "[e2_end]": "[unused3]"}
 
-    # if use_ent_marker:
-    #     e1_start_marker = "[unused0]"
-    #     e1_end_marker = "[unused1]"
-    #     e2_start_marker = "[unused2]"
-    #     e2_end_marker = "[unused3]"
+    def get_special_token(w):
+        if w not in special_tokens:
+            special_tokens[w] = "[unused%d]" % len(special_tokens)
+        return special_tokens[w]
+
 
     for split in  ['train', 'valid', 'test']:
         file_path = os.path.join(folder, f'{split}.json')
@@ -67,6 +68,8 @@ def process_file(folder, output, lower=True):
         e1_len_out = open(os.path.join(output, split, 'e1_len.txt'), 'w')
         e2_len_out = open(os.path.join(output, split, 'e2_len.txt'), 'w')
         ids_out = open(os.path.join(output, split, 'ids.txt'), 'w')
+        e1_type_out = open(os.path.join(output, split, 'e1_type.txt'), 'w')
+        e2_type_out = open(os.path.join(output, split, 'e2_type.txt'), 'w')
 
         for item in data:
             sent_toks = [convert_token(t) for t in item['token']]
@@ -88,6 +91,9 @@ def process_file(folder, output, lower=True):
             e1_len = e1_end - e1_start
             e2_len = e2_end - e2_start
 
+            e1_type = get_special_token("SUBJ=%s" % item['subj_type'])
+            e2_type = get_special_token("OBJ=%s" % item['obj_type'])
+
 
             lbl = relation2id[lbl_rel]
             print(" ".join(wp_toks), file=sent_out)
@@ -97,6 +103,8 @@ def process_file(folder, output, lower=True):
             print(e1_len, file=e1_len_out)
             print(e2_len, file=e2_len_out)
             print(item['id'], file=ids_out)
+            print(e1_type, file=e1_type_out)
+            print(e2_type, file=e2_type_out)
 
 if __name__ == '__main__':
     process_file("/private/home/xwhan/dataset/tacred/raw", "/private/home/xwhan/dataset/tacred/processed-splits")

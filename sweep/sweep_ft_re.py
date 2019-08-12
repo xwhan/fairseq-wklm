@@ -46,13 +46,14 @@ def get_grid(args):
         hyperparam('--save-interval-updates', 1000),
         hyperparam('--criterion', ['cross_entropy'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--seed', [3,4,5], save_dir_key=lambda val: f'seed{val}'),
-        hyperparam('--max-sentences', 4, save_dir_key=lambda val: f'bsz{val}'),
+        hyperparam('--max-sentences', 8, save_dir_key=lambda val: f'bsz{val}'),
         hyperparam('--log-format', 'json'),
         hyperparam('--model-dim', 1024),
         hyperparam("--ddp-backend", "no_c10d"),
-        hyperparam("--use-marker"),
+        # hyperparam("--use-marker"),
+        hyperparam("--use-ner"),
         hyperparam('--fp16', True, binary_flag=True),
-        hyperparam("--max-length", [256, 512], save_dir_key=lambda val: f'maxlen{val}'),
+        hyperparam("--max-length", 256, save_dir_key=lambda val: f'maxlen{val}'),
         hyperparam("--last-drop", 0.1, save_dir_key=lambda val: f'drop{val}')
 
         

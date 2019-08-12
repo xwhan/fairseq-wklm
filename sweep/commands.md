@@ -49,7 +49,7 @@ python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data -p kdn_pred_on_start
 
 
 ```
-python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/ves/2019-05-31/mlm-big-bookwiki.st512.mt4096.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion cross_entropy --use-marker --curriculum 1 --model-dim 1024
+python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/ves/2019-05-31/mlm-big-bookwiki.st512.mt4096.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion cross_entropy --use-ner --curriculum 1 --model-dim 1024 --ddp-backend no_c10d
 ```
 
 ## evaluate relation extraction
@@ -59,7 +59,7 @@ python scripts/evaluate_re.py --arch re /private/home/xwhan/dataset/tacred
 ```
 
 ## sweep relation extraction
-python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_cls_bert_large -t -1 -g 8 -n 1 
+python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_cls_ner -t -1 -g 4 -n 1 
 
 # tensorboard logs
 ssh -J prn-fairjmp02 -L 8889:localhost:8889 100.97.67.36
