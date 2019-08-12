@@ -99,6 +99,10 @@ class REDataset(FairseqDataset):
                 block_text[e2_offset:e2_end] + \
                 [e2_end_marker] + \
                 block_text[e2_end:]
+
+                e1_offset += 1 
+                e2_offset += 3
+
             else:
                 assert e2_end <= e1_offset
                 block_text = block_text[:e2_offset] + \
@@ -109,17 +113,14 @@ class REDataset(FairseqDataset):
                 [e1_start_marker] + \
                 block_text[e1_offset:e1_end] + \
                 [e1_end_marker] + \
-                block_text[e1_end:]   
+                block_text[e1_end:]
 
-        e1_offset = self.e1_offsets[index] + 1 # for cls
-        e2_offset = self.e2_offsets[index] + 1
+                e2_offset += 1
+                e1_offset += 3
 
         block_text = torch.LongTensor(block_text)
 
         sent, segment = self.prepend_cls(block_text)
-
-        # check offset
-        # import pdb; pdb.set_trace()
 
         # truncate the sample
         item_len = sent.size(0)

@@ -51,12 +51,13 @@ class SpanQATask(FairseqTask):
 
         # kdn parameters
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
+        parser.add_argument("--add-layer", action='store_true')
 
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
         self.valid_groups = ('classification_start', 'classification_end')
-        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
+        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'), do_lower_case=True)
 
     @classmethod
     def setup_task(cls, args, **kwargs):

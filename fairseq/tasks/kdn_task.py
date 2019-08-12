@@ -46,6 +46,8 @@ class KDNTask(FairseqTask):
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-labels', type=int, default=2, help='number of labels')
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
+        parser.add_argument("--kdn-layer", default=12)
+        parser.add_argument("--add-layer", action='store_true')
 
     def __init__(self, args, dictionary):
         super().__init__(args)

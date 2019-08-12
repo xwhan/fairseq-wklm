@@ -96,7 +96,7 @@ def collate(samples):
 
 class REDataset(Dataset):
     """docstring for REDataset"""
-    def __init__(self, task, data_path, max_length):
+    def __init__(self, task, data_path, max_length, use_marker):
         super().__init__()
         self.task = task
         self.data_path = data_path
@@ -104,23 +104,62 @@ class REDataset(Dataset):
         self.relation2id = self.load_relationids()
         self.vocab = task.dictionary
         self.max_length = max_length
+        self.use_marker = use_marker
 
     def __getitem__(self, index):
         raw_sample = self.raw_data[index]
-
         sent = raw_sample['sent']
         id_ = raw_sample['id']
         e1_offset = raw_sample['e1_start']
         e2_offset = raw_sample['e2_start']
-        lbl = raw_sample['lbl']
-
-        # assert sent[e1_offset] == "[unused0]"
-        # assert sent[e2_offset] == "[unused2]"
-
+        rel_label = raw_sample['lbl']
+        e1_len = raw_sample['e1_len']
+        e2_len = raw_sample['e2_len']
         text = torch.LongTensor(self.binarize_list(sent))
-        e1_offset += 1
-        e2_offset += 1
-        text, segment = self.prepend_cls(text)
+
+        e1_start_marker = self.vocab.index("[unused0]")
+        e1_end_marker = self.vocab.index("[unused1]")
+        e2_start_marker = self.vocab.index("[unused2]")
+        e2_end_marker = self.vocab.index("[unused3]")
+
+        e1_end = e1_offset + e1_len
+        e2_end = e2_offset + e2_len
+
+        block_text = block_text.tolist()
+
+        if self.use_marker:
+            if e1_offset < e2_offset:
+                assert e1_end <= e2_offset
+                block_text = block_text[:e1_offset] + \
+                [e1_start_marker] + \
+                block_text[e1_offset:e1_end] + \
+                [e1_end_marker] +  \
+                block_text[e1_end:e2_offset] + \
+                [e2_start_marker] + \
+                block_text[e2_offset:e2_end] + \
+                [e2_end_marker] + \
+                block_text[e2_end:]
+
+                e1_offset += 1 
+                e2_offset += 3                
+
+            else:
+                assert e2_end <= e1_offset
+                block_text = block_text[:e2_offset] + \
+                [e2_start_marker] + \
+                block_text[e2_offset:e2_end] + \
+                [e2_end_marker] + \
+                block_text[e2_end:e1_offset] + \
+                [e1_start_marker] + \
+                block_text[e1_offset:e1_end] + \
+                [e1_end_marker] + \
+                block_text[e1_end:]
+
+                e2_offset += 1
+                e1_offset += 3
+
+        block_text = torch.LongTensor(block_text)
+        text, segment = self.prepend_cls(block_text)
 
         # truncate the sample
         item_len = text.size(0)
@@ -215,14 +254,14 @@ class REDataset(Dataset):
 
         samples = []
 
-        for sent, e1_start, e2_start, lbl, id_ in zip(sents, e1_offsets, e2_offsets, loaded_labels, ids):
-            samples.append({"sent": sent, "e1_start": e1_start, "e2_start": e2_start, "lbl": lbl, "id": id_})
+        for sent, e1_start, e2_start, lbl, id_, e1_len, e2_len in zip(sents, e1_offsets, e2_offsets, loaded_labels, ids, e1_lens, e2_lens):
+            samples.append({"sent": sent, "e1_start": e1_start, "e2_start": e2_start, "lbl": lbl, "id": id_, 'e1_len': e1_len, 'e2_len': e2_len})
 
         return samples
 
 if __name__ == '__main__':
     parser = options.get_training_parser('re')
-    parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-09/re_bert_best.re.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_last.pt')
+    parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-11/re_marker_only_bert_large.re.adam.lr1e-05.bert_large.crs_ent.seed3.bsz4.maxlen256.drop0.1.ngpu8/checkpoint_last.pt')
     parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/tacred/processed-splits/test', type=str)
     parser.add_argument('--eval-bsz', default=32, type=int)
     args = options.parse_args_and_arch(parser)

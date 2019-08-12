@@ -35,7 +35,7 @@ def is_whitespace(c):
         return True
     return False
 
-def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
+def get_final_text(pred_text, orig_text, tokenizer, do_lower_case, verbose_logging=False):
 
     def _strip_spaces(text):
         ns_chars = []
@@ -47,8 +47,6 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
             ns_chars.append(c)
         ns_text = "".join(ns_chars)
         return (ns_text, ns_to_s_map)
-
-    tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
 
     tok_text = " ".join(tokenizer.tokenize(orig_text))
 
@@ -98,6 +96,48 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
     output_text = orig_text[orig_start_position:(orig_end_position + 1)]
     return output_text
 
+def build_map(context, tokenizer):
+    doc_tokens = []
+    char_to_word_offset = []
+    prev_is_whitespace = True
+    for c in context:
+        if is_whitespace(c):
+            prev_is_whitespace = True
+        else:
+            if prev_is_whitespace:
+                doc_tokens.append(c)
+            else:
+                doc_tokens[-1] += c
+            prev_is_whitespace = False
+        char_to_word_offset.append(len(doc_tokens) - 1)
+
+    orig_to_tok_index = [] # original token to wordpiece index
+    tok_to_orig_index = [] # wordpiece token to original token index
+    all_doc_tokens = [] # wordpiece tokens
+    for (i, token) in enumerate(doc_tokens):
+        orig_to_tok_index.append(len(all_doc_tokens))
+        sub_tokens = tokenizer.tokenize(token) # wordpiece tokens
+        for sub_token in sub_tokens:
+            tok_to_orig_index.append(i)
+            all_doc_tokens.append(sub_token)
+
+    return orig_to_tok_index, tok_to_orig_index, doc_tokens, all_doc_tokens
+
+def process_raw(data_path, tokenizer, out_path):
+    raw_data = [json.loads(item) for item in open(data_path).readlines()]   
+    for item in tqdm(raw_data):
+        q = item['q']
+        para = item['para']
+        question_toks = tokenizer.tokenize(q)
+        orig_to_tok_index, tok_to_orig_index, doc_tokens, wp_tokens = build_map(para, tokenizer)
+        item['tok_to_orig_index'] = tok_to_orig_index
+        item['para_subtoks'] = wp_tokens
+        item['para_toks'] = doc_tokens
+        item['q_subtoks'] = question_toks
+
+    with open(out_path, 'w') as g:
+        for _ in raw_data:
+            g.write(json.dumps(_) + '\n')
 
 class ReaderDataset(Dataset):
     """docstring for RankerDataset"""
@@ -112,15 +152,14 @@ class ReaderDataset(Dataset):
 
     def __getitem__(self, index):
         raw_sample = self.raw_data[index]
-        question = raw_sample['q']
         qid = raw_sample['qid']
-        para = raw_sample['para'].lower()
         para_id = raw_sample['para_id']
         score = raw_sample['score']
 
-        question = self.task.dictionary.encode_line(question.lower(), line_tokenizer=self.task.tokenizer.tokenize, append_eos=False)
-        orig_to_tok_index, tok_to_orig_index, doc_tokens, wp_tokens = self.build_map(para)
-        paragraph = torch.LongTensor(self.binarize_list(wp_tokens))
+        para_subtoks = raw_sample['para_subtoks']
+        paragraph = torch.LongTensor(self.binarize_list(para_subtoks))
+        q_subtoks = raw_sample['q_subtoks']
+        question = torch.LongTensor(self.binarize_list(q_subtoks))
 
         if question.size(0) > self.max_query_length:
             question = question[:self.max_query_length]
@@ -132,7 +171,7 @@ class ReaderDataset(Dataset):
         paragraph_mask = torch.zeros(text.shape).byte()
         paragraph_mask[para_offset:-1] = 1
 
-        return {'qid': qid, 'para_id': para_id, 'sentence':text, 'segment': seg, 'score': score, 'para_offset': para_offset, 'paragraph_mask': paragraph_mask, 'doc_tokens': doc_tokens, 'wp_tokens': wp_tokens, 'tok_to_orig_index': tok_to_orig_index, 'q': raw_sample['q'], 'c': raw_sample['para']}
+        return {'qid': qid, 'para_id': para_id, 'sentence':text, 'segment': seg, 'score': score, 'para_offset': para_offset, 'paragraph_mask': paragraph_mask, 'doc_tokens': raw_sample['para_toks'], 'wp_tokens': para_subtoks, 'tok_to_orig_index': raw_sample['tok_to_orig_index'], 'q': raw_sample['q'], 'c': raw_sample['para']}
 
     def _join_sents(self, sent1, sent2):
         cls = sent1.new_full((1,), self.vocab.cls())
@@ -161,46 +200,15 @@ class ReaderDataset(Dataset):
             print('failed on', s)
             raise
 
-    def build_map(self, context):
-        doc_tokens = []
-        char_to_word_offset = []
-        prev_is_whitespace = True
-        for c in context:
-            if is_whitespace(c):
-                prev_is_whitespace = True
-            else:
-                if prev_is_whitespace:
-                    doc_tokens.append(c)
-                else:
-                    doc_tokens[-1] += c
-                prev_is_whitespace = False
-            char_to_word_offset.append(len(doc_tokens) - 1)
-
-        orig_to_tok_index = [] # original token to wordpiece index
-        tok_to_orig_index = [] # wordpiece token to original token index
-        all_doc_tokens = [] # wordpiece tokens
-        for (i, token) in enumerate(doc_tokens):
-            orig_to_tok_index.append(len(all_doc_tokens))
-            sub_tokens = self.tokenize(token) # wordpiece tokens
-            for sub_token in sub_tokens:
-                tok_to_orig_index.append(i)
-                all_doc_tokens.append(sub_token)
-
-        return orig_to_tok_index, tok_to_orig_index, doc_tokens, all_doc_tokens
-
     def __len__(self):
         return len(self.raw_data)
 
     def load_dataset(self):
-        raw_data = [json.loads(item) for item in open(self.data_path).readlines()]
+        raw_data = [json.loads(item.strip()) for item in open(self.data_path).readlines()]
         samples = []
         for item in raw_data:
-            ranking_score = item.get('score', 1.0)
-            question = item['q']
-            para = item['para']
-            qid = item['qid']
-            para_id = item['para_id']
-            samples.append({'qid': qid, 'q':question, 'para': para,  'para_id': para_id, 'score':ranking_score})
+            item["score"] = item.get('score', 1.0)
+            samples.append(item)
         return samples
 
 def collate(samples):
@@ -236,17 +244,21 @@ def collate(samples):
 
 def main(args):
     task = tasks.setup_task(args)
+    # process_raw("/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json", task.tokenizer, "/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json")
     model = _load_models(args, task)
 
     model.cuda()
 
     eval_dataset = ReaderDataset(task, args.eval_data, args.max_query_length, args.max_length)
-    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=10)
+    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=32)
 
     qid2results = defaultdict(list)
 
     start_preds = []
     end_preds = []
+
+    basic_tokenizer = BasicTokenizer(do_lower_case=True)
+
 
     with torch.no_grad():
         for batch_ndx, batch_data in enumerate(tqdm(dataloader)):
@@ -287,7 +299,7 @@ def main(args):
                 tok_text = tok_text.strip()
                 tok_text = " ".join(tok_text.split())
                 orig_text = " ".join(orig_tokens)
-                final_text = get_final_text(tok_text, orig_text, True)
+                final_text = get_final_text(tok_text, orig_text, basic_tokenizer, True)
 
                 qid2results[qid].append((final_text, ans_score, r_score))
 
@@ -352,14 +364,13 @@ def metrics(args):
 if __name__ == '__main__':
     parser = options.get_training_parser('span_qa')
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json', type=str)
+    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json', type=str)
 
     parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/test.json')
 
     # save the prediction file
     parser.add_argument('--save-name', default='prediction_kdn.json')
-
-    parser.add_argument('--eval-bsz', default=32, type=int)
+    parser.add_argument('--eval-bsz', default=64, type=int)
     parser.add_argument('--save', action='store_true')
 
     # args = options.parse_args_and_arch(parser)

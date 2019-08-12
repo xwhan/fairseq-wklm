@@ -16,6 +16,9 @@ class KDN(BaseFairseqModel):
 
         self.pretrain_model = pretrain_model
 
+        if args.add_layer:
+            self.kdn_layers = pretrain_model.sentence_encoderadd_transformer_layer(args.kdn_layers)
+
         self.kdn_outputs = nn.Linear(args.model_dim, 2) # aggregate CLS and entity tokens
 
         self.reset_parameters()

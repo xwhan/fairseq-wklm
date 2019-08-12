@@ -18,7 +18,8 @@ class RE(BaseFairseqModel):
         self.pretrain_model = pretrain_model
         self.use_kdn = args.use_kdn
 
-        self.re_outputs = nn.Linear(args.model_dim*3, args.num_class) # aggregate CLS and entity tokens
+        self.re_outputs = nn.Linear(args.model_dim*2, args.num_class) # aggregate CLS and entity tokens
+        self.last_dropout = nn.Dropout(args.last_drop)
 
         self.reset_parameters()
 
@@ -45,7 +46,7 @@ class RE(BaseFairseqModel):
 
         e1_tok_rep = torch.bmm(start_masks.unsqueeze(1), x).squeeze(1)
         e2_tok_rep = torch.bmm(end_masks.unsqueeze(1), x).squeeze(1)
-        entity_rep = torch.cat([cls_rep, e1_tok_rep, e2_tok_rep], dim=-1)
+        entity_rep = self.last_dropout(torch.cat([e1_tok_rep, e2_tok_rep], dim=-1))
         entity_logits = self.re_outputs(entity_rep)
 
         return entity_logits
@@ -56,7 +57,7 @@ class RE(BaseFairseqModel):
         """Add model-specific arguments to the parser."""
         parser.add_argument('--bert-path', metavar='PATH', help='path to elmo model')
         parser.add_argument('--model-dim', type=int, metavar='N', help='decoder input dimension')
-        parser.add_argument('--last-dropout', type=float, metavar='D', help='dropout before projection')
+
 
     @classmethod
     def build_model(cls, args, task):
@@ -72,7 +73,7 @@ class RE(BaseFairseqModel):
             print(f'| fine-tuning kdn pretrained model...')
             task = KDNTask(args, dictionary)
             models, _ = checkpoint_utils.load_model_ensemble(
-            [args.bert_path], task=task)
+            [args.bert_path], arg_overrides={"add_layer": args.add_layer}, task=task)
         else:
             print(f'| fine-tuning bert pretrained model...')
             task = MaskedLMTask(args, dictionary)

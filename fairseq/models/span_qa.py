@@ -43,11 +43,6 @@ class SpanQA(BaseFairseqModel):
         parser.add_argument('--bert-path', metavar='PATH', help='path to pretrained bert model')
         parser.add_argument('--model-dim', type=int, metavar='N', help='decoder input dimension')
         parser.add_argument('--last-dropout', type=float, metavar='D', help='dropout before projection')
-        # parser.add_argument('--model-dropout', type=float, metavar='D', help='lm dropout')
-        # parser.add_argument('--attention-dropout', type=float, metavar='D', help='lm dropout')
-        # parser.add_argument('--relu-dropout', type=float, metavar='D', help='lm dropout')
-        # parser.add_argument('--proj-unk', action='store_true', help='if true, also includes unk emb in projection')
-        # parser.add_argument('--layer-norm', action='store_true', help='if true, does non affine layer norm before proj')
 
     @classmethod
     def build_model(cls, args, task):
@@ -73,7 +68,7 @@ class SpanQA(BaseFairseqModel):
             print(f'| fine-tuning kdn pretrained model...')
             task = KDNTask(args, dictionary)
             models, _ = checkpoint_utils.load_model_ensemble(
-            [args.bert_path], task=task)
+            [args.bert_path], arg_overrides={"add_layer": args.add_layer}, task=task)
         else:
             print(f'| fine-tuning bert pretrained model...')
             task = MaskedLMTask(args, dictionary)

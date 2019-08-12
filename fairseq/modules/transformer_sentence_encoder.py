@@ -100,6 +100,13 @@ class TransformerSentenceEncoder(nn.Module):
         self.use_position_embeddings = use_position_embeddings
         self.apply_bert_init = apply_bert_init
         self.learned_pos_embedding = learned_pos_embedding
+        self.ffn_embedding_dim = ffn_embedding_dim
+        self.num_attention_heads = num_attention_heads
+        self.attention_dropout = attention_dropout
+        self.activation_dropout = activation_dropout
+        self.activation_fn = activation_fn
+        self.add_bias_kv = add_bias_kv
+        self.add_zero_attn = add_zero_attn
 
         self.embed_tokens = nn.Embedding(
             self.vocab_size, self.embedding_dim, self.padding_idx,
@@ -112,14 +119,15 @@ class TransformerSentenceEncoder(nn.Module):
             else None
         )
 
-        self.embed_positions = PositionalEmbedding(
-               self.max_seq_len,
-               self.embedding_dim,
-               self.padding_idx,
-               learned=self.learned_pos_embedding,
-           ) if self.use_position_embeddings else None
+        # self.embed_positions = PositionalEmbedding(
+        #        self.max_seq_len,
+        #        self.embedding_dim,
+        #        self.padding_idx,
+        #        learned=self.learned_pos_embedding,
+        #    ) if self.use_position_embeddings else None
 
-        # self.embed_positions =  nn.Embedding(self.max_seq_len, self.embedding_dim)
+        # for BERT LATGE
+        self.embed_positions =  nn.Embedding(self.max_seq_len, self.embedding_dim)
 
         self.layers = nn.ModuleList(
             [
@@ -208,3 +216,22 @@ class TransformerSentenceEncoder(nn.Module):
             inner_states = [x]
 
         return inner_states, sentence_rep
+
+    def add_transformer_layer(self, num_layers):
+        return nn.ModuleList(
+            [
+                TransformerSentenceEncoderLayer(
+                    embedding_dim=self.embedding_dim,
+                    ffn_embedding_dim=ffn_embedding_dim,
+                    num_attention_heads=num_attention_heads,
+                    dropout=self.dropout,
+                    attention_dropout=attention_dropout,
+                    activation_dropout=activation_dropout,
+                    activation_fn=activation_fn,
+                    add_bias_kv=add_bias_kv,
+                    add_zero_attn=add_zero_attn,
+                )
+                for _ in range(num_layers)
+            ]
+        )
+

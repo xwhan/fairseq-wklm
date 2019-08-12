@@ -49,9 +49,11 @@ class RETask(FairseqTask):
         parser.add_argument('--num-class', type=int, default=42)
         parser.add_argument('--use-kdn', action="store_true")
         parser.add_argument('--use-marker', action="store_true")
+        parser.add_argument('--last-drop', type=float, default=0.0, help='dropout before projection')
 
         # kdn parameters
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
+        parser.add_argument("--add-layer", action='store_true')
 
     def __init__(self, args, dictionary):
         super().__init__(args)
@@ -161,7 +163,7 @@ class RETask(FairseqTask):
 
         assert len(dataset) == len(loaded_labels)
 
-        shuffle = False if split == 'train' else False
+        shuffle = True if split == 'train' else False
 
         self.datasets[split] = REDataset(
             dataset, loaded_labels, e1_offsets, e1_lens, e2_offsets, e2_lens, sizes, self.dictionary,

@@ -8,9 +8,9 @@ python sweep/sweep_ft_ranker.py -d /private/home/xwhan/dataset/webq_ranking -p r
 
 # Span QA Experiments
 ## debug span_qa
-python train.py --fp16  /private/home/xwhan/dataset/webq_qa --task span_qa --arch span_qa --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion span_qa --use-kdn
+python train.py --fp16  /private/home/xwhan/dataset/webq_qa --task span_qa --arch span_qa --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/xwhan/2019-08-09/kdn_pred_on_start.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu16/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion span_qa --use-kdn
 ## sweep for span qa
-python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/webq_qa -p reader_ft -t -1 -g 2 -n 1
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/webq_qa -p reader_ft_kdn -t -1 -g 1 -n 1
 ## evaluation for span_qa
 * use kdn model 
 ```
@@ -42,8 +42,14 @@ python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data -p kdn_pred_on_start
 # Relation Extraction Experiments
 
 ## debug relation extraction
+/checkpoint/ves/2019-05-31/mlm-big-bookwiki.st512.mt4096.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt
+
+/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt
+
+
+
 ```
-python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion cross_entropy --use-marker --curriculum 1
+python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/ves/2019-05-31/mlm-big-bookwiki.st512.mt4096.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion cross_entropy --use-marker --curriculum 1 --model_dim 1024
 ```
 
 ## evaluate relation extraction
@@ -53,7 +59,7 @@ python scripts/evaluate_re.py --arch re /private/home/xwhan/dataset/tacred
 ```
 
 ## sweep relation extraction
-python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_marker_cls -t -1 -g 1 -n 1 
+python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_marker_only_kdn -t -1 -g 8 -n 1 
 
 # tensorboard logs
 ssh -J prn-fairjmp02 -L 8889:localhost:8889 100.97.67.36
