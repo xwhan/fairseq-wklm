@@ -18,7 +18,7 @@ class RE(BaseFairseqModel):
         self.pretrain_model = pretrain_model
         self.use_kdn = args.use_kdn
 
-        self.re_outputs = nn.Linear(args.model_dim*2, args.num_class) # aggregate CLS and entity tokens
+        self.re_outputs = nn.Linear(args.model_dim, args.num_class) # aggregate CLS and entity tokens
         self.last_dropout = nn.Dropout(args.last_drop)
 
         self.reset_parameters()
@@ -40,13 +40,16 @@ class RE(BaseFairseqModel):
             x, _ = self.pretrain_model(sentence, segment)
         
 
-        cls_rep = x[:,0,:]
+        cls_rep = _["pooled_output"]
+
         start_masks = (entity_masks == 1).type(x.type())
         end_masks = (entity_masks == 2).type(x.type())
 
         e1_tok_rep = torch.bmm(start_masks.unsqueeze(1), x).squeeze(1)
         e2_tok_rep = torch.bmm(end_masks.unsqueeze(1), x).squeeze(1)
-        entity_rep = self.last_dropout(torch.cat([e1_tok_rep, e2_tok_rep], dim=-1))
+        # entity_rep = self.last_dropout(torch.cat([e1_tok_rep, e2_tok_rep], dim=-1))
+
+        entity_rep = self.last_dropout(cls_rep)
         entity_logits = self.re_outputs(entity_rep)
 
         return entity_logits

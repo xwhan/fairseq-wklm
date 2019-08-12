@@ -115,7 +115,6 @@ class REDataset(Dataset):
         rel_label = raw_sample['lbl']
         e1_len = raw_sample['e1_len']
         e2_len = raw_sample['e2_len']
-        text = torch.LongTensor(self.binarize_list(sent))
 
         e1_start_marker = self.vocab.index("[unused0]")
         e1_end_marker = self.vocab.index("[unused1]")
@@ -125,6 +124,7 @@ class REDataset(Dataset):
         e1_end = e1_offset + e1_len
         e2_end = e2_offset + e2_len
 
+        block_text = torch.LongTensor(self.binarize_list(sent))
         block_text = block_text.tolist()
 
         if self.use_marker:
@@ -169,7 +169,7 @@ class REDataset(Dataset):
             e1_offset = min(e1_offset, self.max_length - 1)
             e2_offset = min(e2_offset, self.max_length - 1)
 
-        return {'id': id_, "segment": segment, "text": text, "target": lbl, "e1_offset": e1_offset, "e2_offset": e2_offset}
+        return {'id': id_, "segment": segment, "text": text, "target": rel_label, "e1_offset": e1_offset, "e2_offset": e2_offset}
 
     def prepend_cls(self, sent):
         cls = sent.new_full((1,), self.vocab.cls())
@@ -261,16 +261,16 @@ class REDataset(Dataset):
 
 if __name__ == '__main__':
     parser = options.get_training_parser('re')
-    parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-11/re_marker_only_bert_large.re.adam.lr1e-05.bert_large.crs_ent.seed3.bsz4.maxlen256.drop0.1.ngpu8/checkpoint_last.pt')
+    parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-12/re_marker_only_bert_large.re.adam.lr1e-05.bert_large.crs_ent.seed3.bsz4.maxlen256.drop0.2.ngpu8/checkpoint_best.pt')
     parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/tacred/processed-splits/test', type=str)
-    parser.add_argument('--eval-bsz', default=32, type=int)
+    parser.add_argument('--eval-bsz', default=64, type=int)
     args = options.parse_args_and_arch(parser)
 
     task = tasks.setup_task(args)
     model = _load_models(args, task)
     model.cuda()
 
-    eval_dataset = REDataset(task, args.eval_data, args.max_length)
+    eval_dataset = REDataset(task, args.eval_data, args.max_length, use_marker=True)
     relation2id = eval_dataset.relation2id
     id2relation = {v: k for k, v in relation2id.items()}
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=10)

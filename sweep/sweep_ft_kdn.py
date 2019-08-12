@@ -37,7 +37,7 @@ def get_grid(args):
         hyperparam('--lr', 1e-5, save_dir_key=lambda val: f'lr{val}'),
         # hyperparam("--adam-betas", "(0.9, 0.999)", save_dir_key=lambda val: "beta998"),
         hyperparam("--lr-scheduler", "fixed"),
-        hyperparam('--save-interval-updates', 5000),
+        hyperparam('--save-interval-updates', 50000),
         # hyperparam("--warmup-updates", 10000, save_dir_key=lambda val: f"warmup{val}"),
         # hyperparam("--tensorboard-logdir", "/checkpoint/xwhan/kdn_pretrain"),
         hyperparam('--log-interval', 1000),

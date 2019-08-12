@@ -26,7 +26,7 @@ def get_grid(args):
         # hyperparam('--no-epoch-checkpoints'),
         hyperparam('--arch', 'span_qa', save_dir_key=lambda val: val),
         hyperparam('--task', 'span_qa'),
-        hyperparam("--max-epoch", 15),
+        hyperparam("--max-epoch", 20),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
         hyperparam('--lr', [1e-5, 5e-6], save_dir_key=lambda val: f'lr{val}'),
         hyperparam('--lr-scheduler', "fixed"),

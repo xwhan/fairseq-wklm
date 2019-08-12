@@ -222,14 +222,14 @@ class TransformerSentenceEncoder(nn.Module):
             [
                 TransformerSentenceEncoderLayer(
                     embedding_dim=self.embedding_dim,
-                    ffn_embedding_dim=ffn_embedding_dim,
-                    num_attention_heads=num_attention_heads,
+                    ffn_embedding_dim=self.ffn_embedding_dim,
+                    num_attention_heads=self.num_attention_heads,
                     dropout=self.dropout,
-                    attention_dropout=attention_dropout,
-                    activation_dropout=activation_dropout,
-                    activation_fn=activation_fn,
-                    add_bias_kv=add_bias_kv,
-                    add_zero_attn=add_zero_attn,
+                    attention_dropout=self.attention_dropout,
+                    activation_dropout=self.activation_dropout,
+                    activation_fn=self.activation_fn,
+                    add_bias_kv=self.add_bias_kv,
+                    add_zero_attn=self.add_zero_attn,
                 )
                 for _ in range(num_layers)
             ]

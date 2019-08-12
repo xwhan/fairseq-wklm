@@ -119,8 +119,11 @@ class REDataset(FairseqDataset):
                 e1_offset += 3
 
         block_text = torch.LongTensor(block_text)
-
         sent, segment = self.prepend_cls(block_text)
+
+        if self.use_marker:
+            assert self.debinarize_list(sent.tolist())[e1_offset] == '[unused0]'
+            assert self.debinarize_list(sent.tolist())[e2_offset] == '[unused2]'
 
         # truncate the sample
         item_len = sent.size(0)

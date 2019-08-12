@@ -3,13 +3,10 @@ import json
 import os
 import sys
 from tqdm import tqdm
-from joblib import Parallel, delayed
 
 sys.path.append('/private/home/xwhan/fairseq-py')
 
-from fairseq.data.masked_lm_dictionary import BertDictionary
-from fairseq import utils
-from fairseq.tokenization import BertTokenizer, whitespace_tokenize
+from fairseq.tokenization import BertTokenizer
 
 
 def is_whitespace(c):
@@ -24,7 +21,23 @@ def process(s, tokenizer):
         print('failed on', s)
         raise
 
-def process_file(folder, output, use_ent_marker=False):
+def convert_token(token):
+    """ Convert PTB tokens to normal tokens """
+    if (token.lower() == '-lrb-'):
+            return '('
+    elif (token.lower() == '-rrb-'):
+        return ')'
+    elif (token.lower() == '-lsb-'):
+        return '['
+    elif (token.lower() == '-rsb-'):
+        return ']'
+    elif (token.lower() == '-lcb-'):
+        return '{'
+    elif (token.lower() == '-rcb-'):
+        return '}'
+    return token
+
+def process_file(folder, output, lower=True):
     """
     sentence
     e1_start
@@ -34,7 +47,7 @@ def process_file(folder, output, use_ent_marker=False):
     label
     """
 
-    tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt')
+    tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt', do_lower_case=lower)
     relation2id = json.load(open(os.path.join(folder, "relation2id.json")))
 
     # if use_ent_marker:
@@ -56,7 +69,7 @@ def process_file(folder, output, use_ent_marker=False):
         ids_out = open(os.path.join(output, split, 'ids.txt'), 'w')
 
         for item in data:
-            sent_toks = item['token']
+            sent_toks = [convert_token(t) for t in item['token']]
             lbl_rel = item['relation']
             wp_toks = []
             orig_to_tok_index = []
@@ -65,6 +78,7 @@ def process_file(folder, output, use_ent_marker=False):
                 sub_toks = process(tok.lower(), tokenizer)
                 for sub_tok in sub_toks:
                     wp_toks.append(sub_tok)
+            wp_toks.append("[SEP]")
             
             e1_start = orig_to_tok_index[item['subj_start']] 
             e1_end = orig_to_tok_index[item['subj_end'] + 1] if item['subj_end'] + 1 < len(orig_to_tok_index) else len(orig_to_tok_index) # the wp tok position after the entity
@@ -74,21 +88,6 @@ def process_file(folder, output, use_ent_marker=False):
             e1_len = e1_end - e1_start
             e2_len = e2_end - e2_start
 
-            # if use_ent_marker:
-            #     e1_len += 2
-            #     e2_len += 2
-            #     if e1_start < e2_start:
-            #         assert e1_end <= e2_start
-            #         wp_toks = wp_toks[:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:]
-            #         e1_end += 1
-            #         e2_start += 2
-            #         e2_end += 3
-            #     else:
-            #         assert e2_end <= e1_start
-            #         wp_toks = wp_toks[:e2_start] + [e2_start_marker] + wp_toks[e2_start:e2_end] + [e2_end_marker] + wp_toks[e2_end:e1_start] + [e1_start_marker] + wp_toks[e1_start:e1_end] + [e1_end_marker] + wp_toks[e1_end:]
-            #         e2_end += 1
-            #         e1_start += 2
-            #         e1_end += 3
 
             lbl = relation2id[lbl_rel]
             print(" ".join(wp_toks), file=sent_out)
