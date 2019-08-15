@@ -2,6 +2,7 @@ import json
 import sys
 import torch
 from tqdm import tqdm
+import os
 
 from collections import defaultdict
 
@@ -139,6 +140,7 @@ def process_raw(data_path, tokenizer, out_path):
         for _ in raw_data:
             g.write(json.dumps(_) + '\n')
 
+
 class ReaderDataset(Dataset):
     """docstring for RankerDataset"""
     def __init__(self, task, data_path, max_query_lengths, max_length):
@@ -154,7 +156,7 @@ class ReaderDataset(Dataset):
         raw_sample = self.raw_data[index]
         qid = raw_sample['qid']
         para_id = raw_sample['para_id']
-        score = raw_sample['score']
+        score = raw_sample.get('score', 0)
 
         para_subtoks = raw_sample['para_subtoks']
         paragraph = torch.LongTensor(self.binarize_list(para_subtoks))
@@ -244,13 +246,19 @@ def collate(samples):
 
 def main(args):
     task = tasks.setup_task(args)
+
+    # process_raw("/private/home/xwhan/dataset/squad1.1/splits/valid.json", task.tokenizer, "/private/home/xwhan/dataset/squad1.1/splits/valid_eval.json")
+    # assert False
+
     # process_raw("/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json", task.tokenizer, "/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json")
+
+
     model = _load_models(args, task)
 
     model.cuda()
 
     eval_dataset = ReaderDataset(task, args.eval_data, args.max_query_length, args.max_length)
-    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=32)
+    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=50)
 
     qid2results = defaultdict(list)
 
@@ -258,7 +266,6 @@ def main(args):
     end_preds = []
 
     basic_tokenizer = BasicTokenizer(do_lower_case=True)
-
 
     with torch.no_grad():
         for batch_ndx, batch_data in enumerate(tqdm(dataloader)):
@@ -285,7 +292,7 @@ def main(args):
 
             start_position_ = list(np.array(start_position) - np.array(para_offset))
             end_position_ = list(np.array(end_position) - np.array(para_offset))
-
+            
             for qid, doc_tokens, wp_tokens, tok_to_orig_index, start, end, ans_score, r_score, q, c, offset in zip(batch_data['id'], batch_data['doc_tokens'], batch_data['wp_tokens'], batch_data['tok_to_orig_index'], start_position_, end_position_, answer_scores, ranking_scores, batch_data['q'], batch_data['c'], para_offset):
 
                 tok_tokens = wp_tokens[start:end+1]
@@ -364,18 +371,17 @@ def metrics(args):
 if __name__ == '__main__':
     parser = options.get_training_parser('span_qa')
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json', type=str)
 
+    
+    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json', type=str)
     parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/test.json')
 
     # save the prediction file
     parser.add_argument('--save-name', default='prediction_kdn.json')
-    parser.add_argument('--eval-bsz', default=64, type=int)
+    parser.add_argument('--eval-bsz', default=50, type=int)
     parser.add_argument('--save', action='store_true')
 
-    # args = options.parse_args_and_arch(parser)
     args = options.parse_args_and_arch(parser)
-    # args = parser.parse_args()
 
     main(args)
 

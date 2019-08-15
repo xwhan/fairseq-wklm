@@ -421,7 +421,7 @@ class Trainer(object):
 
         if 'nll_loss' in logging_output:
             self.meters['valid_nll_loss'].update(logging_output.get('nll_loss', 0), ntokens)
-        #import pdb;pdb.set_trace()
+
         if 'extra_metrics' in logging_output:
             for n, m in self.meters['task'].items():
                 m.update(*logging_output['extra_metrics'][n])

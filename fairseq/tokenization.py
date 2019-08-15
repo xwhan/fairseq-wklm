@@ -81,7 +81,7 @@ class BertTokenizer(object):
         Args:
           vocab_file: Path to a one-wordpiece-per-line vocabulary file
           do_lower_case: Whether to lower case the input
-                         Only has an effect when do_wordpiece_only=False
+                Only has an effect when do_basic_tokenize=True
           do_basic_tokenize: Whether to do basic tokenization before wordpiece.
           max_len: An artificial maximum length to truncate tokenized sequences to;
                          Effective maximum length is always the minimum of this

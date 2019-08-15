@@ -16,7 +16,7 @@ from torch.utils.data import ConcatDataset
 from fairseq.data import (
     REDataset, TokenBlockDataset,
     IndexedDataset)
-from fairseq.meters import ClassificationMeter
+from fairseq.meters import F1Meter
 
 from . import FairseqTask, register_task
 
@@ -48,9 +48,12 @@ class RETask(FairseqTask):
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-class', type=int, default=42)
         parser.add_argument('--use-kdn', action="store_true")
+        parser.add_argument('--use-hf', action="store_true")
         parser.add_argument('--use-marker', action="store_true")
         parser.add_argument('--use-ner', action='store_true')
+        parser.add_argument('--use-cased', action='store_true')
         parser.add_argument('--last-drop', type=float, default=0.0, help='dropout before projection')
+        parser.add_argument('--no-rel-id', type=int, default=1)
 
         # kdn parameters
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
@@ -64,6 +67,8 @@ class RETask(FairseqTask):
         self.max_length = args.max_length
         self.use_marker = args.use_marker
         self.use_ner = args.use_ner
+        self.use_cased = args.use_cased
+        self.no_rel_id = args.no_rel_id
 
         assert not (self.use_marker and self.use_ner)
 
@@ -76,7 +81,10 @@ class RETask(FairseqTask):
         """
 
         # dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
-        dictionary = BertDictionary.load(os.path.join(args.data, 'dict.txt'))
+        if args.use_cased:
+            dictionary = BertDictionary.load("/private/home/xwhan/fairseq-py/vocab_cased/dict.txt")
+        else:
+            dictionary = BertDictionary.load("/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt")
         print('| get dictionary: {} types from {}'.format(len(dictionary), os.path.join(args.data, 'dict.txt')))
 
         return cls(args, dictionary)
@@ -90,8 +98,13 @@ class RETask(FairseqTask):
 
         loaded_datasets = [[]]
         stop = False
-        binarized_data_path = os.path.join(self.args.data, "binarized")
-        tokenized_data_path = os.path.join(self.args.data, "processed-splits")
+
+        if self.use_cased:
+            binarized_data_path = os.path.join(self.args.data, "binarized-cased")
+            tokenized_data_path = os.path.join(self.args.data, "processed-splits-cased")
+        else:
+            binarized_data_path = os.path.join(self.args.data, "binarized")
+            tokenized_data_path = os.path.join(self.args.data, "processed-splits")
         
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
@@ -190,13 +203,13 @@ class RETask(FairseqTask):
 
     def extra_meters(self):
         return {
-            'classification': ClassificationMeter(),
+            'F1': F1Meter(),
         }
 
     def aggregate_extra_metrics(self, logs):
         return {
-            'classification': tuple(
-                reduce(lambda q, w: (sum(x) for x in zip(q, w)), [log['extra_metrics']['classification'] for log in logs if 'extra_metrics' in log]))
+            'F1': tuple(
+                reduce(lambda q, w: (sum(x) for x in zip(q, w)), [log['extra_metrics']['F1'] for log in logs if 'extra_metrics' in log]))
         }
 
 
@@ -206,15 +219,19 @@ class RETask(FairseqTask):
         if is_valid:
             loss, sample_size, logging_output = outputs
             lprobs = logging_output['lprobs']
-            pred = torch.argmax(lprobs, dim=-1)
-            t = sample['target'].squeeze(-1)
-            tp = t.eq(pred).long().sum().item()
-            tn = 0
-            fp = t.size(0) - tp
-            fn = 0
+            pred = torch.argmax(lprobs, dim=-1).tolist()
+            target = sample['target'].squeeze(-1).tolist()
 
-            logging_output['extra_metrics'] = {}
-            logging_output['extra_metrics']['classification'] = (tp, tn, fp, fn)
+            n_gold = n_pred = n_corr = 0
+            for p, t in zip(pred, target):
+                if p != self.no_rel_id:
+                    n_pred += 1
+                if t != self.no_rel_id:
+                    n_gold += 1
+                if (p != self.no_rel_id) and (t != self.no_rel_id) and (p == t):
+                    n_corr +=1
+
+            logging_output['extra_metrics'] = {"F1": (n_pred, n_gold, n_corr)}
 
         else:
             loss, sample_size, logging_output = outputs

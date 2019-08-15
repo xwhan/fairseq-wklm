@@ -1,0 +1,14 @@
+#!/bin/sh
+#SBATCH --job-name=nsample_2
+#SBATCH --output=/checkpoint/xwhan/stdout/nsample_2.%j
+#SBATCH --error=/checkpoint/xwhan/stderr/nsample_2.%j
+#SBATCH --mail-user=xwhan@fb.com
+#SBATCH --mail-type=none
+#SBATCH --partition=learnfair
+#SBATCH --signal=USR1@120
+#SBATCH --mem=500000
+#SBATCH --time=800
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=64
+#SBATCH --ntasks-per-node=1
+srun sh nsample_scripts/run.nsample_2.sh

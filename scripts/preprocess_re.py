@@ -46,14 +46,16 @@ def process_file(folder, output, lower=True):
     e2_len
     label
     """
-
-    tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt', do_lower_case=lower)
+    if lower:
+        tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt', do_lower_case=lower)
+    else:
+        tokenizer = BertTokenizer('/private/home/xwhan/fairseq-py/vocab_cased/vocab.txt')
     relation2id = json.load(open(os.path.join(folder, "relation2id.json")))
-    special_tokens = {"[e1_start]": "[unused0]", "[e1_end]":"[unused1]", "[e2_start]": "[unused2]", "[e2_end]": "[unused3]"}
+    special_tokens = {"[e1_start]": "[unused1]", "[e1_end]":"[unused2]", "[e2_start]": "[unused3]", "[e2_end]": "[unused4]"}
 
     def get_special_token(w):
         if w not in special_tokens:
-            special_tokens[w] = "[unused%d]" % len(special_tokens)
+            special_tokens[w] = "[unused%d]" % (len(special_tokens) + 1)
         return special_tokens[w]
 
 
@@ -78,7 +80,7 @@ def process_file(folder, output, lower=True):
             orig_to_tok_index = []
             for i, tok in enumerate(sent_toks):
                 orig_to_tok_index.append(len(wp_toks))
-                sub_toks = process(tok.lower(), tokenizer)
+                sub_toks = process(tok, tokenizer)
                 for sub_tok in sub_toks:
                     wp_toks.append(sub_tok)
             wp_toks.append("[SEP]")
@@ -107,4 +109,6 @@ def process_file(folder, output, lower=True):
             print(e2_type, file=e2_type_out)
 
 if __name__ == '__main__':
-    process_file("/private/home/xwhan/dataset/tacred/raw", "/private/home/xwhan/dataset/tacred/processed-splits")
+    # process_file("/private/home/xwhan/dataset/tacred/raw", "/private/home/xwhan/dataset/tacred/processed-splits")
+
+    process_file("/private/home/xwhan/dataset/tacred/raw", "/private/home/xwhan/dataset/tacred/processed-splits-cased", lower=False)

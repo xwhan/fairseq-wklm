@@ -7,6 +7,10 @@ from . import (
     BaseFairseqModel, register_model, register_model_architecture,
 )
 
+# from fairseq.models.hf_bert import PreTrainedBertModel
+
+from pytorch_transformers import BertModel
+
 from fairseq import checkpoint_utils
 
 
@@ -17,8 +21,9 @@ class RE(BaseFairseqModel):
 
         self.pretrain_model = pretrain_model
         self.use_kdn = args.use_kdn
+        self.use_hf = args.use_hf
 
-        self.re_outputs = nn.Linear(args.model_dim, args.num_class) # aggregate CLS and entity tokens
+        self.re_outputs = nn.Linear(args.model_dim*2, args.num_class) # aggregate CLS and entity tokens
         self.last_dropout = nn.Dropout(args.last_drop)
 
         self.reset_parameters()
@@ -36,19 +41,20 @@ class RE(BaseFairseqModel):
         
         if self.use_kdn:
             x = self.pretrain_model(sentence, segment, only_states=self.use_kdn)
+        elif self.use_hf:
+            outputs = self.pretrain_model(sentence)
+            x = outputs[0]
         else:
             x, _ = self.pretrain_model(sentence, segment)
-        
-
-        cls_rep = _["pooled_output"]
+            cls_rep = _["pooled_output"]
 
         start_masks = (entity_masks == 1).type(x.type())
         end_masks = (entity_masks == 2).type(x.type())
-        # e1_tok_rep = torch.bmm(start_masks.unsqueeze(1), x).squeeze(1)
-        # e2_tok_rep = torch.bmm(end_masks.unsqueeze(1), x).squeeze(1)
-        # entity_rep = self.last_dropout(torch.cat([e1_tok_rep, e2_tok_rep], dim=-1))
+        e1_tok_rep = torch.bmm(start_masks.unsqueeze(1), x).squeeze(1)
+        e2_tok_rep = torch.bmm(end_masks.unsqueeze(1), x).squeeze(1)
+        entity_rep = self.last_dropout(torch.cat([e1_tok_rep, e2_tok_rep], dim=-1))
 
-        entity_rep = self.last_dropout(cls_rep)
+        # entity_rep = self.last_dropout(cls_rep)
         entity_logits = self.re_outputs(entity_rep)
 
         return entity_logits
@@ -76,6 +82,10 @@ class RE(BaseFairseqModel):
             task = KDNTask(args, dictionary)
             models, _ = checkpoint_utils.load_model_ensemble(
             [args.bert_path], arg_overrides={"add_layer": args.add_layer}, task=task)
+        elif args.use_hf:
+            print(f'| fine-tuning hf bert pretrained model...')
+            model = BertModel.from_pretrained("bert-large-cased")
+            models = [model]
         else:
             print(f'| fine-tuning bert pretrained model...')
             task = MaskedLMTask(args, dictionary)

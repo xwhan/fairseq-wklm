@@ -119,7 +119,7 @@ class KDNDataset(FairseqDataset):
                 # average mask
                 # masks[idx, idx_, offset:offset+length] = 1 / length
 
-                # only use the start tok of of the entity
+                # only use the start and end tok of of the entity
                 masks[idx, idx_, offset] = 1
                 masks[idx, idx_, offset+length-1] = 2
 

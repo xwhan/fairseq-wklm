@@ -117,3 +117,48 @@ class ClassificationMeter(object):
             (attach_prefix('f1'), self.f1),
         ]
 
+
+class F1Meter(object):
+    """Computes and stores the average and current value"""
+
+    def __init__(self, val_prefix=''):
+        self.val_prefix = val_prefix
+        self.reset()
+
+    def reset(self):
+        self.n_pred = 0
+        self.n_gold = 0
+        self.n_correct = 0
+
+        self.precision = 0
+        self.recall = 0
+        self.f1 = 0
+
+    def update(self, n_pred, n_gold, n_correct):
+        self.n_pred += n_pred
+        self.n_gold += n_gold
+        self.n_correct += n_correct
+
+        if self.n_correct == 0:
+            self.precision = 0
+            self.recall = 0
+            self.f1 = 0
+        else:
+            self.precision = self.n_correct * 1.0 / self.n_pred
+            self.recall = self.n_correct * 1.0 / self.n_gold
+            if self.precision + self.recall > 0:
+                self.f1 = 2.0 * self.precision * self.recall / (self.precision + self.recall)
+            else:
+                self.f1 = 0.0
+
+    def vals(self):
+        def attach_prefix(s):
+            return '{}_{}'.format(self.val_prefix, s) if len(self.val_prefix) > 0 else s
+        return [
+            (attach_prefix('npred'), self.n_pred),
+            (attach_prefix('ngold'), self.n_gold),
+            (attach_prefix('ncorr'), self.n_correct),
+            (attach_prefix('p'), self.precision),
+            (attach_prefix('r'), self.recall),
+            (attach_prefix('f1'), self.f1),
+        ]

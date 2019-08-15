@@ -435,46 +435,49 @@ class PreTrainedBertModel(nn.Module):
             *inputs, **kwargs: additional input for the specific Bert class
                 (ex: num_labels for BertForSequenceClassification)
         """
-        if pretrained_model_name in PRETRAINED_MODEL_ARCHIVE_MAP:
-            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name]
-        else:
-            archive_file = pretrained_model_name
-        # redirect to the cache, if necessary
-        try:
-            resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
-        except FileNotFoundError:
-            logger.error(
-                "Model name '{}' was not found in model name list ({}). "
-                "We assumed '{}' was a path or url but couldn't find any file "
-                "associated to this path or url.".format(
-                    pretrained_model_name,
-                    ', '.join(PRETRAINED_MODEL_ARCHIVE_MAP.keys()),
-                    archive_file))
-            return None
-        if resolved_archive_file == archive_file:
-            logger.info("loading archive file {}".format(archive_file))
-        else:
-            logger.info("loading archive file {} from cache at {}".format(
-                archive_file, resolved_archive_file))
-        tempdir = None
-        if os.path.isdir(resolved_archive_file):
-            serialization_dir = resolved_archive_file
-        else:
-            # Extract archive to temp dir
-            tempdir = tempfile.mkdtemp()
-            logger.info("extracting archive file {} to temp dir {}".format(
-                resolved_archive_file, tempdir))
-            with tarfile.open(resolved_archive_file, 'r:gz') as archive:
-                archive.extractall(tempdir)
-            serialization_dir = tempdir
+
+        # archive_file = pretrained_model_name
+        # # redirect to the cache, if necessary
+        # try:
+        #     resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
+        # except FileNotFoundError:
+        #     logger.error(
+        #         "Model name '{}' was not found in model name list ({}). "
+        #         "We assumed '{}' was a path or url but couldn't find any file "
+        #         "associated to this path or url.".format(
+        #             pretrained_model_name,
+        #             ', '.join(PRETRAINED_MODEL_ARCHIVE_MAP.keys()),
+        #             archive_file))
+        #     return None
+        # if resolved_archive_file == archive_file:
+        #     logger.info("loading archive file {}".format(archive_file))
+        # else:
+        #     logger.info("loading archive file {} from cache at {}".format(
+        #         archive_file, resolved_archive_file))
+        # tempdir = None
+        # if os.path.isdir(resolved_archive_file):
+        #     serialization_dir = resolved_archive_file
+        # else:
+        #     # Extract archive to temp dir
+        #     tempdir = tempfile.mkdtemp()
+        #     logger.info("extracting archive file {} to temp dir {}".format(
+        #         resolved_archive_file, tempdir))
+        #     with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+        #         archive.extractall(tempdir)
+        #     serialization_dir = tempdir
         # Load config
-        config_file = os.path.join(serialization_dir, CONFIG_NAME)
+        serialization_dir = os.path.join("/private/home/xwhan/pytorch-transformers/models", pretrained_model_name)
+        config_file = os.path.join(serialization_dir, "config.json")
+
         config = BertConfig.from_json_file(config_file)
         logger.info("Model config {}".format(config))
         # Instantiate model.
         model = cls(config, *inputs, **kwargs)
+
+        print(model)
+
         if state_dict is None:
-            weights_path = os.path.join(serialization_dir, WEIGHTS_NAME)
+            weights_path = os.path.join(serialization_dir, "pytorch_model.bin")
             state_dict = torch.load(weights_path)
 
         old_keys = []
@@ -507,6 +510,7 @@ class PreTrainedBertModel(nn.Module):
             for name, child in module._modules.items():
                 if child is not None:
                     load(child, prefix + name + '.')
+
         load(model, prefix='' if hasattr(model, 'bert') else 'bert.')
         if len(missing_keys) > 0:
             logger.info("Weights of {} not initialized from pretrained model: {}".format(
@@ -514,9 +518,6 @@ class PreTrainedBertModel(nn.Module):
         if len(unexpected_keys) > 0:
             logger.info("Weights from pretrained model not used in {}: {}".format(
                 model.__class__.__name__, unexpected_keys))
-        if tempdir:
-            # Clean up temp dir
-            shutil.rmtree(tempdir)
         return model
 
 

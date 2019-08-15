@@ -89,10 +89,10 @@ class REDataset(FairseqDataset):
         block_text = block_text.tolist()
 
         if self.use_marker:
-            e1_start_marker = self.vocab.index("[unused0]")
-            e1_end_marker = self.vocab.index("[unused1]")
-            e2_start_marker = self.vocab.index("[unused2]")
-            e2_end_marker = self.vocab.index("[unused3]")
+            e1_start_marker = self.vocab.index("[unused1]")
+            e1_end_marker = self.vocab.index("[unused2]")
+            e2_start_marker = self.vocab.index("[unused3]")
+            e2_end_marker = self.vocab.index("[unused4]")
             if e1_offset_orig < e2_offset_orig:
                 assert e1_end <= e2_offset_orig
                 block_text = block_text[:e1_offset_orig] + \
@@ -148,8 +148,8 @@ class REDataset(FairseqDataset):
         sent, segment = self.prepend_cls(block_text)
 
         if self.use_marker:
-            assert self.debinarize_list(sent.tolist())[e1_offset] == '[unused0]'
-            assert self.debinarize_list(sent.tolist())[e2_offset] == '[unused2]'
+            assert self.debinarize_list(sent.tolist())[e1_offset] == '[unused1]'
+            assert self.debinarize_list(sent.tolist())[e2_offset] == '[unused3]'
         elif self.use_ner:
             assert "unused" in self.debinarize_list(sent.tolist())[e1_offset]
             assert "unused" in self.debinarize_list(sent.tolist())[e2_offset]

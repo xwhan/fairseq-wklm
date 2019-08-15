@@ -19,13 +19,29 @@ class KDN(BaseFairseqModel):
         if args.add_layer:
             self.kdn_layers = pretrain_model.sentence_encoderadd_transformer_layer(args.kdn_layers)
 
-        self.kdn_outputs = nn.Linear(args.model_dim, 2) # aggregate CLS and entity tokens
+        self.start_end = args.start_end
+
+        if self.start_end:
+            self.kdn_s_outputs = nn.Linear(args.model_dim, 2) # aggregate CLS and entity tokens
+            self.kdn_e_outputs = nn.Linear(args.model_dim, 2)
+        else:
+            self.kdn_outputs = nn.Linear(args.model_dim, 2)
+
+        self.kdn_drop = nn.Dropout(args.last_dropout)
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.kdn_outputs.weight.data.normal_(mean=0.0, std=0.02)
-        self.kdn_outputs.bias.data.zero_()
+
+        if self.start_end:
+            self.kdn_s_outputs.weight.data.normal_(mean=0.0, std=0.02)
+            self.kdn_s_outputs.bias.data.zero_()
+            self.kdn_e_outputs.weight.data.normal_(mean=0.0, std=0.02)
+            self.kdn_e_outputs.bias.data.zero_()
+        else:
+            self.kdn_outputs.weight.data.normal_(mean=0.0, std=0.02)
+            self.kdn_outputs.bias.data.zero_()
+
 
     def forward(self, sentence, segment, entity_masks=None, only_states=False):
         """
@@ -46,16 +62,19 @@ class KDN(BaseFairseqModel):
         # entity_rep = torch.cat([cls_rep.unsqueeze(1).expand_as(entity_rep), entity_rep], dim=-1)
         # entity_logits = self.kdn_outputs(entity_rep)
 
-        # no pooling
-        start_masks = (entity_masks == 1).type(x.type())
-        end_masks = (entity_masks == 2).type(x.type())
-        start_tok_rep = torch.bmm(start_masks, x)
-        end_tok_rep = torch.bmm(end_masks, x)
-        # entity_rep = torch.cat([start_tok_rep, end_tok_rep], dim=-1)
-        entity_rep = start_tok_rep
-        entity_logits = self.kdn_outputs(entity_rep)
-
-        return entity_logits, lm_logits
+        if self.start_end:
+            start_masks = (entity_masks == 1).type(x.type())
+            end_masks = (entity_masks == 2).type(x.type())
+            start_tok_rep = torch.bmm(start_masks, x)
+            end_tok_rep = torch.bmm(end_masks, x)
+            start_logits = self.kdn_s_outputs(self.kdn_drop(start_tok_rep))
+            end_logits = self.kdn_e_outputs(self.kdn_drop(end_tok_rep))
+            return start_logits, end_logits, lm_logits
+        else:
+            start_masks = (entity_masks == 1).type(x.type())
+            start_tok_rep = torch.bmm(start_masks, x)
+            entity_logits = self.kdn_outputs(self.kdn_drop(start_tok_rep))
+            return entity_logits, lm_logits
 
 
     @staticmethod

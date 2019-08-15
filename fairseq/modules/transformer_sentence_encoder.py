@@ -119,15 +119,15 @@ class TransformerSentenceEncoder(nn.Module):
             else None
         )
 
-        # self.embed_positions = PositionalEmbedding(
-        #        self.max_seq_len,
-        #        self.embedding_dim,
-        #        self.padding_idx,
-        #        learned=self.learned_pos_embedding,
-        #    ) if self.use_position_embeddings else None
+        self.embed_positions = PositionalEmbedding(
+               self.max_seq_len,
+               self.embedding_dim,
+               self.padding_idx,
+               learned=self.learned_pos_embedding,
+           ) if self.use_position_embeddings else None
 
         # for BERT LATGE
-        self.embed_positions =  nn.Embedding(self.max_seq_len, self.embedding_dim)
+        # self.embed_positions =  nn.Embedding(self.max_seq_len, self.embedding_dim)
 
         self.layers = nn.ModuleList(
             [

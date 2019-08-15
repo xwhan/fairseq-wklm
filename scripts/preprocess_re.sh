@@ -1,9 +1,14 @@
 #!/bin/bash
 
-DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
 
-TASK_DATA_FOLDER="/private/home/xwhan/dataset/tacred/processed-splits"
-OUT_DATA_FOLDER="/private/home/xwhan/dataset/tacred/binarized"
+# DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
+# TASK_DATA_FOLDER="/private/home/xwhan/dataset/tacred/processed-splits"
+# OUT_DATA_FOLDER="/private/home/xwhan/dataset/tacred/binarized"
+
+
+DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_cased/dict.txt"
+TASK_DATA_FOLDER="/private/home/xwhan/dataset/tacred/processed-splits-cased"
+OUT_DATA_FOLDER="/private/home/xwhan/dataset/tacred/binarized-cased"
 
 VAR="train"
 for INPUT_TYPE in $VAR

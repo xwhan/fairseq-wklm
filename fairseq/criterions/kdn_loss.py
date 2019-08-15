@@ -41,6 +41,7 @@ class KDN_loss(FairseqCriterion):
         self.ignore_index = task.ignore_index
         self.max_length = task.max_length
         self.use_mlm = task.use_mlm
+        self.start_end = task.start_end
 
     def forward(self, model, sample):
         """Compute the loss for the given sample.
@@ -53,7 +54,11 @@ class KDN_loss(FairseqCriterion):
         if sample['net_input']['sentence'].size(1) > self.max_length:
             assert False
 
-        entity_logits, lm_logits = model(**sample['net_input'])
+        if self.start_end:
+            entity_start_logits, entity_end_logits, lm_logits = model(**sample['net_input'])
+        else:
+            entity_logits, lm_logits = model(**sample['net_input'])
+
         if self.use_mlm:
             lm_logits = lm_logits.view(-1, lm_logits.size(-1))
             lm_targets = sample['lm_target'].view(-1)
@@ -61,15 +66,25 @@ class KDN_loss(FairseqCriterion):
             ntokens = utils.strip_pad(lm_targets, self.padding_idx).numel()
             lm_loss = lm_loss / ntokens
 
-        ent_loss, lprobs = self.compute_loss(model, entity_logits, sample)
-        n_entities = utils.strip_pad(sample['target'], self.ignore_index).numel()
-        ent_loss = ent_loss / n_entities
-        loss = ent_loss + lm_loss if self.use_mlm else ent_loss
+        if self.start_end:
+            ent_loss_start, lprobs = self.compute_loss(model, entity_start_logits, sample)
+            ent_loss_end, _ = self.compute_loss(model, entity_end_logits, sample)
+            n_entities = utils.strip_pad(sample['target'], self.ignore_index).numel()
+            ent_loss_start = ent_loss_start / n_entities
+            ent_loss_end = ent_loss_end / n_entities
+            loss = ent_loss_start + ent_loss_end + lm_loss if self.use_mlm else ent_loss_start + ent_loss_end
+        else:
+            ent_loss, lprobs = self.compute_loss(model, entity_logits, sample)
+            n_entities = utils.strip_pad(sample['target'], self.ignore_index).numel()
+            ent_loss = ent_loss / n_entities
+            loss = ent_loss + lm_loss if self.use_mlm else ent_loss
 
         sample_size = 1
         logging_output = {
             'loss': utils.item(loss.data),
-            'ent_loss': utils.item(ent_loss.data),
+            'ent_start_loss': utils.item(ent_loss_start.data) if self.start_end else 0,
+            'ent_end_loss': utils.item(ent_loss_end.data) if self.start_end else 0,
+            'ent_loss': utils.item(ent_loss.data) if not self.start_end else 0,
             'lm_loss': utils.item(lm_loss.data),
             'ntokens': sample['ntokens'],
             'nsentences': sample['target'].size(0),
@@ -92,6 +107,8 @@ class KDN_loss(FairseqCriterion):
     def aggregate_logging_outputs(logging_outputs):
         """Aggregate logging outputs from data parallel training."""
         loss_sum = sum(log.get('loss', 0) for log in logging_outputs)
+        ent_start_loss_sum = sum(log.get('ent_start_loss', 0) for log in logging_outputs)
+        ent_end_loss_sum = sum(log.get('ent_end_loss', 0) for log in logging_outputs)
         ent_loss_sum = sum(log.get('ent_loss', 0) for log in logging_outputs)
         lm_loss_sum = sum(log.get('lm_loss', 0) for log in logging_outputs)
         ntokens = sum(log.get('ntokens', 0) for log in logging_outputs)
@@ -99,6 +116,8 @@ class KDN_loss(FairseqCriterion):
         sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
         agg_output = {
             'loss': loss_sum / sample_size / math.log(2),
+            'ent_start_loss': ent_start_loss_sum / sample_size / math.log(2),
+            'ent_end_loss': ent_end_loss_sum / sample_size / math.log(2),
             'ent_loss': ent_loss_sum / sample_size / math.log(2),
             'lm_loss': lm_loss_sum / sample_size / math.log(2),
             'ntokens': ntokens,

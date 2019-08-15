@@ -58,7 +58,6 @@ def divide_examples(raw_folder="/private/home/xwhan/Wikipedia/tokenized", outfol
     chunk_size = chunk_size - 1
 
     print(f'how many files {len(tokenized_files)}......')
-
     for k in itertools.count():
     # for k in [99]:
         if k == len(tokenized_files):

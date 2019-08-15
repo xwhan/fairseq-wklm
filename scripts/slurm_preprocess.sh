@@ -15,12 +15,11 @@ JOBSCRIPTS=scripts_pre
 mkdir -p ${JOBSCRIPTS}
 
 queue=learnfair
-
-for shard_id in $(seq 0 49)
+for shard_id in $(seq 0 9)
     do
     SWEEP_NAME=process_${shard_id}
     SAVE_ROOT=/checkpoint/xwhan/${DATE}/${SWEEP_NAME}
-    mkdir -p stdout stderr
+    mkdir -p /checkpoint/xwhan/stdout /checkpoint/xwhan/stdout
     JNAME=${SWEEP_NAME}.preprocess
     SCRIPT=${JOBSCRIPTS}/run.${JNAME}.sh
     SLURM=${JOBSCRIPTS}/run.${JNAME}.slrm
@@ -29,13 +28,13 @@ for shard_id in $(seq 0 49)
     echo "#!/bin/sh" > ${SCRIPT}
     echo "#!/bin/sh" > ${SLURM}
     echo "#SBATCH --job-name=$JNAME" >> ${SLURM}
-    echo "#SBATCH --output=stdout/${JNAME}.%j" >> ${SLURM}
-    echo "#SBATCH --error=stderr/${JNAME}.%j" >> ${SLURM}
+    echo "#SBATCH --output=/checkpoint/xwhan/stdout/${JNAME}.%j" >> ${SLURM}
+    echo "#SBATCH --error=/checkpoint/xwhanstderr/${JNAME}.%j" >> ${SLURM}
     echo "#SBATCH --mail-user=xwhan@fb.com" >> ${SLURM}
     echo "#SBATCH --mail-type=none" >> ${SLURM}
     echo "#SBATCH --partition=$queue" >> ${SLURM}
     echo "#SBATCH --signal=USR1@120" >> ${SLURM}
-    echo "#SBATCH --mem=500000" >> ${SLURM}
+    echo "#SBATCH --mem=1000000" >> ${SLURM}
     echo "#SBATCH --time=100" >> ${SLURM}
     echo "#SBATCH --nodes=1" >> ${SLURM}
     echo "#SBATCH --cpus-per-task=50" >> ${SLURM}
@@ -61,4 +60,10 @@ for shard_id in $(seq 0 49)
     echo "trap \"echo 'TERM Signal received';\" TERM" >> ${SCRIPT}
     echo "trap \"echo 'Signal received'; if [ \"\$SLURM_PROCID\" -eq \"0\" ]; then sbatch ${SLURM}; fi; kill -9 \$child_pid; \" USR1" >> ${SCRIPT}
     echo "while true; do     sleep 1; done" >> ${SCRIPT}
+done
+
+
+for shard_id in $(seq 0 49)
+    do
+        sbatch ./scripts_pre/run.process_$shard_id.preprocess.slrm &
 done

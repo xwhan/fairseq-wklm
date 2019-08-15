@@ -49,13 +49,15 @@ class KDNTask(FairseqTask):
         parser.add_argument("--kdn-layer", default=12)
         parser.add_argument("--add-layer", action='store_true')
 
+        parser.add_argument("--start-end", action='store_true')
+
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
         self.ignore_index = -1
-        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
         self.max_length = args.max_length
         self.use_mlm = args.use_mlm
+        self.start_end = args.start_end
 
     @classmethod
     def setup_task(cls, args, **kwargs):
