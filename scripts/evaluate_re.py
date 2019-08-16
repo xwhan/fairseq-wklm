@@ -110,56 +110,60 @@ class REDataset(Dataset):
         raw_sample = self.raw_data[index]
         sent = raw_sample['sent']
         id_ = raw_sample['id']
-        e1_offset = raw_sample['e1_start']
-        e2_offset = raw_sample['e2_start']
-        rel_label = raw_sample['lbl']
+        rel_label = raw_sample["lbl"]
+        e1_offset_orig = raw_sample['e1_start']
+        e2_offset_orig = raw_sample['e2_start']
         e1_len = raw_sample['e1_len']
         e2_len = raw_sample['e2_len']
 
-        e1_start_marker = self.vocab.index("[unused0]")
-        e1_end_marker = self.vocab.index("[unused1]")
-        e2_start_marker = self.vocab.index("[unused2]")
-        e2_end_marker = self.vocab.index("[unused3]")
-
-        e1_end = e1_offset + e1_len
-        e2_end = e2_offset + e2_len
+        e1_end = e1_offset_orig + e1_len
+        e2_end = e2_offset_orig + e2_len
 
         block_text = torch.LongTensor(self.binarize_list(sent))
         block_text = block_text.tolist()
 
         if self.use_marker:
-            if e1_offset < e2_offset:
-                assert e1_end <= e2_offset
-                block_text = block_text[:e1_offset] + \
-                [e1_start_marker] + \
-                block_text[e1_offset:e1_end] + \
-                [e1_end_marker] +  \
-                block_text[e1_end:e2_offset] + \
-                [e2_start_marker] + \
-                block_text[e2_offset:e2_end] + \
-                [e2_end_marker] + \
-                block_text[e2_end:]
+            e1_start_marker = self.vocab.index("[unused1]")
+            e1_end_marker = self.vocab.index("[unused2]")
+            e2_start_marker = self.vocab.index("[unused3]")
+            e2_end_marker = self.vocab.index("[unused4]")
+            if e1_offset_orig < e2_offset_orig:
+                assert e1_end <= e2_offset_orig
+                block_text = block_text[:e1_offset_orig] + \
+                    [e1_start_marker] + \
+                    block_text[e1_offset_orig:e1_end] + \
+                    [e1_end_marker] +  \
+                    block_text[e1_end:e2_offset_orig] + \
+                    [e2_start_marker] + \
+                    block_text[e2_offset_orig:e2_end] + \
+                    [e2_end_marker] + \
+                    block_text[e2_end:]
 
-                e1_offset += 1 
-                e2_offset += 3                
+                e1_offset = 1 + e1_offset_orig
+                e2_offset = 3 + e2_offset_orig
 
             else:
-                assert e2_end <= e1_offset
-                block_text = block_text[:e2_offset] + \
-                [e2_start_marker] + \
-                block_text[e2_offset:e2_end] + \
-                [e2_end_marker] + \
-                block_text[e2_end:e1_offset] + \
-                [e1_start_marker] + \
-                block_text[e1_offset:e1_end] + \
-                [e1_end_marker] + \
-                block_text[e1_end:]
-
-                e2_offset += 1
-                e1_offset += 3
+                assert e2_end <= e1_offset_orig
+                block_text = block_text[:e2_offset_orig] + \
+                    [e2_start_marker] + \
+                    block_text[e2_offset_orig:e2_end] + \
+                    [e2_end_marker] + \
+                    block_text[e2_end:e1_offset_orig] + \
+                    [e1_start_marker] + \
+                    block_text[e1_offset_orig:e1_end] + \
+                    [e1_end_marker] + \
+                    block_text[e1_end:]
+                e2_offset = 1 + e2_offset_orig
+                e1_offset = 3 + e1_offset_orig
 
         block_text = torch.LongTensor(block_text)
         text, segment = self.prepend_cls(block_text)
+
+        if self.use_marker:
+            assert self.debinarize_list(text.tolist())[
+                e1_offset] == '[unused1]'
+            assert self.debinarize_list(text.tolist())[
+                e2_offset] == '[unused3]'
 
         # truncate the sample
         item_len = text.size(0)
@@ -246,10 +250,10 @@ class REDataset(Dataset):
                 sents.append(toks)
 
         ids = []
-        with open(os.path.join(raw_path, 'lbl.txt'), 'r') as lbl_f:
+        with open(os.path.join(raw_path, 'ids.txt'), 'r') as lbl_f:
             lines = lbl_f.readlines()
             for line in lines:
-                lbl = int(line.strip())
+                lbl = line.strip()
                 ids.append(lbl)
 
         samples = []

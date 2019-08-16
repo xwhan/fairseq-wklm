@@ -54,6 +54,7 @@ class RETask(FairseqTask):
         parser.add_argument('--use-cased', action='store_true')
         parser.add_argument('--last-drop', type=float, default=0.0, help='dropout before projection')
         parser.add_argument('--no-rel-id', type=int, default=1)
+        parser.add_argument('--final-metric', type=str, default=None, help="metric for model selection")
 
         # kdn parameters
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
@@ -69,6 +70,7 @@ class RETask(FairseqTask):
         self.use_ner = args.use_ner
         self.use_cased = args.use_cased
         self.no_rel_id = args.no_rel_id
+        self.final_metric = args.final_metric
 
         assert not (self.use_marker and self.use_ner)
 

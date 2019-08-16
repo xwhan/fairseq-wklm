@@ -64,7 +64,7 @@ python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data -p kdn_pred_on_ends 
 
 /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt
 
-```python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion cross_entropy --use-marker --curriculum 1 --ddp-backend no_c10d```
+```python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion cross_entropy --use-marker --curriculum 1 --ddp-backend no_c10d --save-interval-updates 10 --final-metric f1```
 
 ```use
 python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/ves/2019-05-31/mlm-big-bookwiki.st512.mt4096.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion cross_entropy --use-marker --curriculum 1 --model-dim 1024 --ddp-backend no_c10d --use-hf --use-cased
@@ -73,11 +73,11 @@ python train.py --fp16  /private/home/xwhan/dataset/tacred --task re --arch re -
 ## evaluate relation extraction
 Use BERT model
 ```
-python scripts/evaluate_re.py --arch re /private/home/xwhan/dataset/tacred 
+python scripts/evaluate_re.py --arch re /private/home/xwhan/dataset/tacred --model-path /checkpoint/xwhan/2019-08-15/re_base_uncased_marker.re.adam.lr2e-05.bert.crs_ent.seed3.bsz32.maxlen128.drop0.1.ngpu1/checkpoint_last.pt
 ```
 
 ## sweep relation extraction
-python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_base_uncased_marker -t -1 -g 1 -n 1 
+python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_256c_base_uncased_marker -t -1 -g 2 -n 1 
 
 # tensorboard logs
 ssh -J prn-fairjmp02 -L 8889:localhost:8889 100.97.67.36

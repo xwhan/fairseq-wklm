@@ -26,9 +26,9 @@ def get_grid(args):
         hyperparam('--task', 're'),
         hyperparam("--max-epoch", 10),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
-        hyperparam('--lr', [2e-5, 1e-5, 5e-6], save_dir_key=lambda val: f'lr{val}'),
-        hyperparam('--lr-scheduler', "reduce_lr_on_plateau"),
-        hyperparam('--lr-shrink', 0.5),
+        hyperparam('--lr', [2e-5, 1e-5, 5e-6, 3e-5, 5e-5], save_dir_key=lambda val: f'lr{val}'),
+        # hyperparam('--lr-scheduler', "reduce_lr_on_plateau"),
+        # hyperparam('--lr-shrink', 0.5),
 
         hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt', save_dir_key=lambda val: f'bert'),
 
@@ -46,11 +46,12 @@ def get_grid(args):
         hyperparam('--save-interval-updates', 500),
         hyperparam('--criterion', ['cross_entropy'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--seed', 3, save_dir_key=lambda val: f'seed{val}'),
-        hyperparam('--max-sentences', [16, 32], save_dir_key=lambda val: f'bsz{val}'),
+        hyperparam('--max-sentences', [8, 16], save_dir_key=lambda val: f'bsz{val}'),
         hyperparam('--log-format', 'json'),
         hyperparam('--model-dim', 768),
         hyperparam("--ddp-backend", "no_c10d"),
         hyperparam("--use-marker"),
+        hyperparam("--final-metric", "f1"),
 
         # # use huggingface bert large
         # hyperparam("--use-hf"),
@@ -58,7 +59,7 @@ def get_grid(args):
 
         # hyperparam("--use-ner"),
         hyperparam('--fp16', True, binary_flag=True),
-        hyperparam("--max-length", 128, save_dir_key=lambda val: f'maxlen{val}'),
+        hyperparam("--max-length", 256, save_dir_key=lambda val: f'maxlen{val}'),
         hyperparam("--last-drop", 0.1, save_dir_key=lambda val: f'drop{val}')
 
         
