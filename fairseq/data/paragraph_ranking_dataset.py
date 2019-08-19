@@ -42,20 +42,26 @@ class ParagraphRankingDataset(FairseqDataset):
           Default: ``True``
     """
 
-    def __init__(self, dataset, labels, sizes, dictionary, shuffle):
-        self.dataset = dataset
-        print('size of the dataset: {}'.format(len(dataset)))
+    def __init__(self, dataset_q, dataset_c, labels, sizes, dictionary, shuffle, max_length):
+        self.dataset_q = dataset_q
+        self.dataset_c = dataset_c
         self.sizes = np.array(sizes) + 3
         self.labels = np.array(labels)
         self.vocab = dictionary
         self.shuffle = shuffle
+        self.max_length = max_length
 
     def __getitem__(self, index):
-        sample = self.dataset[index]
-        q = sample['q']
-        para = sample['para']
+        q = self.dataset_q[index]
+        para = self.dataset_c[index]
         sent1 = torch.cat([q.new(1).fill_(self.vocab.cls()), q, q.new(1).fill_(self.vocab.sep())])
         seg1 = torch.zeros(sent1.size(0)).long()
+
+        # truncate the paragraph if needed
+        if sent1.size(0) + para.size(0) + 1 > self.max_length:
+            extra = sent1.size(0) + para.size(0) + 1 - self.max_length
+            para = para[:-extra]
+
         sent2 = torch.cat([para, para.new(1).fill_(self.vocab.sep())])
         seg2 = torch.ones(sent2.size(0)).long()
         seg = torch.cat([seg1, seg2])
@@ -64,7 +70,7 @@ class ParagraphRankingDataset(FairseqDataset):
         return {'id': index, 'sentence': sent, 'segment': seg, 'target': torch.LongTensor([lbl])}
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.dataset_q)
 
     def collater(self, samples):
         return collate(samples, self.vocab.pad(), self.vocab.eos())
@@ -104,7 +110,8 @@ class ParagraphRankingDataset(FairseqDataset):
 
 
     def prefetch(self, indices):
-        self.dataset.prefetch(indices)
+        self.dataset_q.prefetch(indices)
+        self.dataset_c.prefetch(indices)
 
     @property
     def supports_prefetch(self):

@@ -1,11 +1,8 @@
-# raw glue data as downloaded by glue download script (https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e)
-
-
 DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
 
 SPLITS="train valid"
 
-DATASET="triviaqa"
+DATASET="WebQ-Ranking"
 TASK_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/processed-splits"
 OUT_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/binarized"
 

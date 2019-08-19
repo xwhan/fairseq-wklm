@@ -30,12 +30,14 @@ def get_grid(args):
         # hyperparam('--lr-scheduler', "reduce_lr_on_plateau"),
         # hyperparam('--lr-shrink', 0.5),
 
-        hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt', save_dir_key=lambda val: f'bert'),
+        # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt', save_dir_key=lambda val: f'bert'),
 
         # hyperparam('--bert-path', '/checkpoint/ves/2019-05-31/mlm-big-bookwiki.st512.mt4096.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt', save_dir_key=lambda val: f'bert_large'),
 
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-09/kdn_pred_on_start.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu16/checkpoint_last.pt', save_dir_key=lambda val: f'kdn_best'),
-        # hyperparam("--use-kdn"),
+        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+                   save_dir_key=lambda val: f'kdn_best'),
+        hyperparam("--use-kdn"),
+        hyperparam("--boundary-loss"),
 
 
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_best.pt',save_dir_key=lambda val: f'kdn_best'),

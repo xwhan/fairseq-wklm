@@ -46,10 +46,13 @@ class KDNTask(FairseqTask):
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-labels', type=int, default=2, help='number of labels')
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
-        parser.add_argument("--kdn-layer", default=12)
+        parser.add_argument("--num-kdn", default=4, type=int)
         parser.add_argument("--add-layer", action='store_true')
-
+        parser.add_argument("--boundary-loss", action='store_true')
         parser.add_argument("--start-end", action='store_true')
+
+        parser.add_argument('--final-metric', type=str,
+                            default="loss", help="metric for model selection")
 
     def __init__(self, args, dictionary):
         super().__init__(args)
@@ -58,6 +61,9 @@ class KDNTask(FairseqTask):
         self.max_length = args.max_length
         self.use_mlm = args.use_mlm
         self.start_end = args.start_end
+        self.add_layer = args.add_layer
+        self.boundary_loss = args.boundary_loss
+        self.final_metric = args.final_metric
 
     @classmethod
     def setup_task(cls, args, **kwargs):

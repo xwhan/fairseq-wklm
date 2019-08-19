@@ -42,18 +42,30 @@ class ParagraphRankingTask(FairseqTask):
     def add_args(parser):
         """Add task-specific arguments to the parser."""
         parser.add_argument('data', help='path to data directory')
-        parser.add_argument('--raw-text', default=False, action='store_true',
-                            help='load raw text dataset')
+        parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--num-labels', type=int, default=2,
                             help='number of labels')
-        parser.add_argument('--lazy-load', action='store_true', help='load the dataset lazily')
+        parser.add_argument('--use-kdn', action="store_true")
+        parser.add_argument('--final-metric', type=str,
+                            default="loss", help="metric for model selection")
+
+        # kdn parameters
+        parser.add_argument('--use-mlm', action='store_true',
+                            help='whether add MLM loss for multi-task learning')
+        parser.add_argument("--add-layer", action='store_true')
+        parser.add_argument("--start-end", action='store_true')
+        parser.add_argument("--boundary-loss", action='store_true')
+        parser.add_argument("--num-kdn", default=4, type=int)
 
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
-        self.padding_idx = -100
+        self.ignore_index = -100
         self.num_labels = args.num_labels
-        self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'))
+        self.tokenizer = BertTokenizer(os.path.join(
+            args.data, 'vocab.txt'), do_lower_case=True)
+        self.final_metric = args.final_metric
+        self.max_length = args.max_length
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -66,39 +78,76 @@ class ParagraphRankingTask(FairseqTask):
 
         return cls(args, dictionary)
 
-    def load_dataset(self, split, combine=False):
+    def load_dataset(self, split, combine=False, epoch=0):
         """Load a given dataset split.
         Args:
             split (str): name of the split (e.g., train, valid, test)
         """
 
-        raw_data = open(os.path.join(self.args.data, '{}.json'.format(split))).readlines()
+        loaded_datasets = [[], []]
         loaded_labels = []
-        dataset = []
-        sizes = []
-        print('Processing raw {} data ...'.format(split))
+        stop = False
 
-        for item in tqdm(raw_data):
-            item = json.loads(item)
-            ques_sent = item['q']
-            para_sent = item['para']
-            label = int(item['label'])
+        binarized_data_path = os.path.join(self.args.data, "binarized")
+        tokenized_data_path = os.path.join(self.args.data, "processed-splits")
 
-            loaded_labels.append(label)
+        for k in itertools.count():
+            split_k = split + (str(k) if k > 0 else '')
 
-            ques_sent_idx = self.dictionary.encode_line(ques_sent.lower(), line_tokenizer=self.tokenizer.tokenize, append_eos=False, add_if_not_exist=False)
-            para_sent_idx = self.dictionary.encode_line(para_sent.lower(), line_tokenizer=self.tokenizer.tokenize, append_eos=False, add_if_not_exist=False)
+            path_q = os.path.join(binarized_data_path, 'q', split_k)
+            path_c = os.path.join(binarized_data_path, 'c', split_k)
 
-            if len(para_sent_idx.tolist() + ques_sent_idx.tolist()) + 3 > 512:
-                extra_len = len(para_sent_idx.tolist() + ques_sent_idx.tolist()) + 3 - 512
-                para_sent_idx = para_sent_idx[:-extra_len]
+            for path, datasets in zip([path_q, path_c], loaded_datasets):
+                if IndexedDataset.exists(path):
+                    ds = IndexedDataset(path, fix_lua_indexing=True)
+                else:
+                    if k > 0:
+                        stop = True
+                        break
+                    else:
+                        raise FileNotFoundError(
+                            'Dataset not found: {} ({}) {}'.format(split, self.args.data, path))
+                datasets.append(
+                    TokenBlockDataset(
+                        ds, ds.sizes, 0, pad=self.dictionary.pad(), eos=self.dictionary.eos(),
+                        break_mode='eos', include_targets=False,
+                    ))
 
-            dataset.append({'q': ques_sent_idx, 'para': para_sent_idx})
-            sizes.append(len(para_sent_idx.tolist() + ques_sent_idx.tolist()))
+            if stop:
+                break
 
+            raw_path = os.path.join(tokenized_data_path, split_k)
+            loaded_labels = []
+            with open(os.path.join(raw_path, 'lbl.txt'), 'r') as lbl_f:
+                lines = lbl_f.readlines()
+                for line in lines:
+                    lbls = int(line.strip())
+                    loaded_labels.append(lbls)
+
+            print('| {} {} {} examples'.format(
+                self.args.data, split_k, len(loaded_datasets[0][-1])))
+
+            if not combine:
+                break
+
+        if len(loaded_datasets[0]) == 1:
+            dataset_q = loaded_datasets[0][0]
+            dataset_c = loaded_datasets[1][0]
+            sizes_q = dataset_q.sizes
+            sizes_c = dataset_c.sizes
+        else:
+            dataset_q = ConcatDataset(loaded_datasets[0])
+            dataset_c = ConcatDataset(loaded_datasets[1])
+            sizes_q = np.concatenate([ds.sizes for ds in loaded_datasets[0]])
+            sizes_c = np.concatenate([ds.sizes for ds in loaded_datasets[1]])
+
+        assert len(dataset_q) == len(loaded_labels)
+        assert len(dataset_c) == len(loaded_labels)
+
+        shuffle = True if split == 'train' else False
 
         self.datasets[split] = ParagraphRankingDataset(
-            dataset, loaded_labels, sizes, self.dictionary, True if split == 'train' else False
+            dataset_q, dataset_c, loaded_labels, sizes_q + sizes_c, self.dictionary, True if split == 'train' else False, self.max_length
             )
 
     def extra_meters(self):
@@ -114,16 +163,16 @@ class ParagraphRankingTask(FairseqTask):
         }
 
     def get_loss(self, model, criterion, sample, is_valid=False):
-        loss, sample_size, logging_output = criterion(model, sample, reduce=not is_valid)
+        loss, sample_size, logging_output = criterion(model, sample)
 
         if is_valid:
             assert self.num_labels == 2
-            probs = (-loss).exp()
+            probs = logging_output['lprobs'].exp()
             pos = sample['target'].view(-1).eq(1)
             neg = sample['target'].view(-1).eq(0)
 
-            correct_pos = probs[pos] > 1 / self.num_labels
-            correct_neg = probs[neg] > 1 / self.num_labels
+            correct_pos = probs[pos] > 1.0 / self.num_labels
+            correct_neg = probs[neg] > 1.0 / self.num_labels
 
             tp = correct_pos.long().sum()
             tn = correct_neg.long().sum()

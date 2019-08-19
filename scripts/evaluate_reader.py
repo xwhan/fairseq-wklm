@@ -24,8 +24,7 @@ from official_eval import f1_score, exact_match_score, metric_max_over_ground_tr
 
 def _load_models(args, task):
     models, _model_args = checkpoint_utils.load_model_ensemble(
-        args.model_path.split(':'), arg_overrides=vars(args),
-        task=task,
+        args.model_path.split(':'), {"last_dropout": 0}, task=task,
     )
     for model in models:
         model.eval()
@@ -143,11 +142,13 @@ def process_raw(data_path, tokenizer, out_path):
 
 class ReaderDataset(Dataset):
     """docstring for RankerDataset"""
-    def __init__(self, task, data_path, max_query_lengths, max_length):
+    def __init__(self, task, data_path, max_query_lengths, max_length, downsample=1.0):
         super().__init__()
         self.task = task
         self.data_path = data_path
         self.raw_data = self.load_dataset()
+
+        self.raw_data = self.raw_data[:int(downsample * len(self.raw_data))]
         self.vocab = task.dictionary
         self.max_query_length = max_query_lengths
         self.max_length = max_length
@@ -252,12 +253,12 @@ def main(args):
 
     # process_raw("/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json", task.tokenizer, "/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json")
 
-
     model = _load_models(args, task)
-
+    # model.half()
+    model.eval()
     model.cuda()
 
-    eval_dataset = ReaderDataset(task, args.eval_data, args.max_query_length, args.max_length)
+    eval_dataset = ReaderDataset(task, args.eval_data, args.max_query_length, args.max_length, args.downsample)
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=50)
 
     qid2results = defaultdict(list)
@@ -332,11 +333,10 @@ def main(args):
             line = json.loads(line)
             qid2ground[line['qid']] = line['answer']
 
-    assert len(qid2ground) == len(qid2pred)
 
-    f1_scores = [metric_max_over_ground_truths(f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2ground.keys()]
+    f1_scores = [metric_max_over_ground_truths(f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
 
-    em_scores = [metric_max_over_ground_truths(exact_match_score, qid2pred[qid], qid2ground[qid]) for qid in qid2ground.keys()]
+    em_scores = [metric_max_over_ground_truths(exact_match_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
 
     print(f'f1 score {np.mean(f1_scores)}')
     print(f'em score {np.mean(em_scores)}')
@@ -372,9 +372,9 @@ if __name__ == '__main__':
     parser = options.get_training_parser('span_qa')
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
 
-    
     parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json', type=str)
     parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/test.json')
+    parser.add_argument('--downsample', default=1.0, help='test on small portion of the data')
 
     # save the prediction file
     parser.add_argument('--save-name', default='prediction_kdn.json')

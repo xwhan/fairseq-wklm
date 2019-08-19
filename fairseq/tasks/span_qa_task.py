@@ -48,17 +48,22 @@ class SpanQATask(FairseqTask):
         parser.add_argument('--max-length', type=int, default=512)
         parser.add_argument('--max-query-length', type=int, default=18)
         parser.add_argument('--use-kdn', action="store_true")
+        parser.add_argument('--final-metric', type=str,
+                            default="loss", help="metric for model selection")
 
         # kdn parameters
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
         parser.add_argument("--add-layer", action='store_true')
         parser.add_argument("--start-end", action='store_true')
+        parser.add_argument("--boundary-loss", action='store_true')
+        parser.add_argument("--num-kdn", default=4, type=int)
 
     def __init__(self, args, dictionary):
         super().__init__(args)
         self.dictionary = dictionary
         self.valid_groups = ('classification_start', 'classification_end')
         self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'), do_lower_case=True)
+        self.final_metric = args.final_metric
 
     @classmethod
     def setup_task(cls, args, **kwargs):

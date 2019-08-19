@@ -15,8 +15,13 @@ class SpanQA(BaseFairseqModel):
         super().__init__()
 
         self.pretrain_model = pretrain_model
-        self.qa_outputs = nn.Linear(args.model_dim, 2)
+        if args.add_layer:
+            self.qa_outputs = nn.Linear(args.model_dim*2, 2)
+        else:
+            self.qa_outputs = nn.Linear(args.model_dim, 2)
         self.use_kdn = args.use_kdn
+
+        self.dropout = nn.Dropout(args.last_dropout)
 
         self.reset_parameters()
 
@@ -30,7 +35,7 @@ class SpanQA(BaseFairseqModel):
         else:
             x, _ = self.pretrain_model(text, segment)
 
-        logits = self.qa_outputs(x)
+        logits = self.qa_outputs(self.dropout(x))
         if paragraph_mask.size(1) > x.size(1):
             paragraph_mask = paragraph_mask[:, :x.size(1)]
         assert [paragraph_mask[i].any() for i in range(paragraph_mask.size(0))]
@@ -42,6 +47,7 @@ class SpanQA(BaseFairseqModel):
         """Add model-specific arguments to the parser."""
         parser.add_argument('--bert-path', metavar='PATH', help='path to pretrained bert model')
         parser.add_argument('--model-dim', type=int, metavar='N', help='decoder input dimension')
+        parser.add_argument('--last-dropout', type=float, metavar='D', help='dropout before projection')
         
     @classmethod
     def build_model(cls, args, task):
@@ -67,7 +73,7 @@ class SpanQA(BaseFairseqModel):
             print(f'| fine-tuning kdn pretrained model...')
             task = KDNTask(args, dictionary)
             models, _ = checkpoint_utils.load_model_ensemble(
-            [args.bert_path], arg_overrides={"add_layer": args.add_layer, "last_dropout": 0.0, "start_end": args.start_end}, task=task)
+            [args.bert_path], arg_overrides={"last_dropout": 0.0, "start_end": args.start_end, "boundary_loss": args.boundary_loss, "num_kdn": args.num_kdn}, task=task)
         else:
             print(f'| fine-tuning bert pretrained model...')
             task = MaskedLMTask(args, dictionary)

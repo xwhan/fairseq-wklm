@@ -276,8 +276,8 @@ def validate(args, trainer, task, epoch_itr, subsets):
         if len(misclassified) > 0:
             print(misclassified, flush=True)
         
-        if task.final_metric is not None:
-            valid_losses.append(stats[task.final_metric])
+        if task.final_metric != "loss":
+            valid_losses.append(-stats[task.final_metric])    
         else:
             valid_losses.append(stats['loss'].avg)
     return valid_losses

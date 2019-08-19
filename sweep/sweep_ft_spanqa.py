@@ -23,19 +23,24 @@ max_update= (100000 // 8) * 15
 def get_grid(args):
     return [
         hyperparam('--save-interval', 1),
-        # hyperparam('--no-epoch-checkpoints'),
         hyperparam('--arch', 'span_qa', save_dir_key=lambda val: val),
         hyperparam('--task', 'span_qa'),
-        # hyperparam("--max-epoch", 20),
-        hyperparam("--max-epoch", 4),
+        hyperparam("--max-epoch", 10),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
-        hyperparam('--lr', [1e-5, 5e-6], save_dir_key=lambda val: f'lr{val}'),
+        hyperparam('--lr', [1e-5, 5e-6, 2e-5], save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--lr-scheduler', "reduce_lr_on_plateau"),
         # hyperparam('--lr-shrink', 0.5),
+        hyperparam('--final-metric', 'start_acc'),
 
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-13/kdn_pred_on_ends.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt', save_dir_key=lambda val: f'kdn_best'),
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v3_start_end.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_best'),
         # hyperparam("--use-kdn"),
         # hyperparam("--start-end"),
+
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v3_start_add_4_layer.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_best'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--add-layer'),
 
         hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',save_dir_key=lambda val: f'bert_best'),
 
@@ -50,6 +55,8 @@ def get_grid(args):
         hyperparam('--model-dim', 768),
         hyperparam("--ddp-backend", "no_c10d"),
         hyperparam('--fp16', True, binary_flag=True),
+        hyperparam('--last-dropout', [0.1, 0.2],
+                   save_dir_key=lambda val: f'ldrop{val}'),
 
         # hyperparam('--restore-file', "/checkpoint/xwhan/2019-07-11/reader_squad.span_qa.mxup61875.adam.lr1e-05.bert.crs_ent.seed4.bsz8.ngpu1/checkpoint_best.pt")
     ]

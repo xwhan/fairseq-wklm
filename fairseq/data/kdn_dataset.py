@@ -12,10 +12,6 @@ from typing import Tuple
 
 from . import data_utils, FairseqDataset
 
-
-
-
-
 class KDNDataset(FairseqDataset):
     """
 
@@ -66,10 +62,7 @@ class KDNDataset(FairseqDataset):
         ent_labels = self.ent_labels[index]
         ent_lens = self.ent_lens[index]
         ent_offsets = self.ent_offsets[index]
-
         assert len(ent_labels) == len(ent_lens) == len(ent_offsets)
-
-        # sent, segment = self.prepend_cls(block_text)
         ent_labels_padded = ent_labels + [-1] * (self.max_num_ent - len(ent_labels))
         ent_labels_padded = torch.tensor(ent_labels_padded).long()
 
@@ -87,14 +80,14 @@ class KDNDataset(FairseqDataset):
                 if self.use_mlm:
                     token_range = (self.vocab.nspecial, len(self.vocab))
                     masked_blk_one, masked_tgt_one = self._mask_block(s["block"], self.vocab.mask(), self.vocab.pad(), token_range, (s['ent_offsets'], s['ent_lens']))
-                    tokens = np.concatenate([[self.vocab.cls()], masked_blk_one])
+                    tokens = np.concatenate([[self.vocab.cls()], masked_blk_one, [self.vocab.sep()]])
                     segments = np.ones(len(tokens)) * self.segment_id
-                    targets = np.concatenate([[self.vocab.pad()], masked_tgt_one])
+                    targets = np.concatenate([[self.vocab.pad()], masked_tgt_one, [self.vocab.pad()]])
                     s['sent'] = torch.LongTensor(tokens)
                     s['segment'] = torch.LongTensor(segments)
                     s["lm_target"] = torch.LongTensor(targets)
                 else:
-                    tokens = np.concatenate([[self.vocab.cls()], s['block']])
+                    tokens = np.concatenate([[self.vocab.cls()], s['block'], [self.vocab.sep()]])
                     segments = np.ones(len(tokens)) * self.segment_id
                     s['sent'] = torch.LongTensor(tokens)
                     s['segment'] = torch.LongTensor(segments)
@@ -122,6 +115,10 @@ class KDNDataset(FairseqDataset):
                 # only use the start and end tok of of the entity
                 masks[idx, idx_, offset] = 1
                 masks[idx, idx_, offset+length-1] = 2
+
+                # mask of entity boundaries
+                masks[idx, idx_, offset - 1] = -1
+                masks[idx, idx_, offset+length] = -2
 
         return {
             'ntokens': sum(len(s['sent']) for s in samples),

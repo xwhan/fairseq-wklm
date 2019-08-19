@@ -42,6 +42,7 @@ class KDN_loss(FairseqCriterion):
         self.max_length = task.max_length
         self.use_mlm = task.use_mlm
         self.start_end = task.start_end
+        self.boundary = task.boundary_loss
 
     def forward(self, model, sample):
         """Compute the loss for the given sample.
@@ -51,8 +52,8 @@ class KDN_loss(FairseqCriterion):
         2) the sample size, which is used as the denominator for the gradient
         3) logging outputs to display while training
         """
-        if sample['net_input']['sentence'].size(1) > self.max_length:
-            assert False
+        # if sample['net_input']['sentence'].size(1) > self.max_length:
+        #     assert False
 
         if self.start_end:
             entity_start_logits, entity_end_logits, lm_logits = model(**sample['net_input'])
@@ -73,7 +74,9 @@ class KDN_loss(FairseqCriterion):
             ent_loss_start = ent_loss_start / n_entities
             ent_loss_end = ent_loss_end / n_entities
             loss = ent_loss_start + ent_loss_end + lm_loss if self.use_mlm else ent_loss_start + ent_loss_end
+            
         else:
+            # for both entity boundary loss and regular
             ent_loss, lprobs = self.compute_loss(model, entity_logits, sample)
             n_entities = utils.strip_pad(sample['target'], self.ignore_index).numel()
             ent_loss = ent_loss / n_entities

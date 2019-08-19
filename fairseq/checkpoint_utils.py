@@ -182,6 +182,7 @@ def load_model_ensemble(filenames, arg_overrides=None, task=None):
             were used during model training
         task (fairseq.tasks.FairseqTask, optional): task to use for loading
     """
+
     ensemble = []
     for filename in filenames:
         if not os.path.exists(filename):
@@ -195,7 +196,7 @@ def load_model_ensemble(filenames, arg_overrides=None, task=None):
 
         if task is None:
             task = tasks.setup_task(args)
-
+        
         # build model for ensemble
         model = task.build_model(args)
         model.load_state_dict(state['model'], strict=True)
