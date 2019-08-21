@@ -136,7 +136,6 @@ class Trainer(object):
 
         if os.path.exists(filename):
             state = checkpoint_utils.load_checkpoint_to_cpu(filename)
-            #import pdb; pdb.set_trace()
 
             # load model parameters
             try:

@@ -153,16 +153,40 @@ class ReaderDataset(Dataset):
         self.max_query_length = max_query_lengths
         self.max_length = max_length
 
+        self.q_words = [["how", "many"], ["how", "long"], ["how"], ["which"], ["what"], ["when"], ["whose"], ["who"], ["where"], ["why"]]
+
     def __getitem__(self, index):
         raw_sample = self.raw_data[index]
         qid = raw_sample['qid']
         para_id = raw_sample['para_id']
         score = raw_sample.get('score', 0)
 
+        # process the 
+        q_toks = self.task.tokenizer.basic_tokenizer.tokenize(raw_sample['q'].lower())
+        replaced = False
+        for q_w in self.q_words:
+            if replaced:
+                break
+            for idx in range(len(q_toks)):
+                if q_toks[idx:idx+len(q_w)] == q_w:
+                    q_toks[idx:idx+len(q_w)] = ["[unused1]"]
+                    replaced = True
+                    break
+        q_subtoks = []
+        for ii in q_toks:
+            q_subtoks.extend(self.task.tokenizer.wordpiece_tokenizer.tokenize(
+                ii))
+        if q_subtoks[-1] == "?":
+            q_subtoks = q_subtoks[:-1]
+
+        # print(q_subtoks)
+        # print(raw_sample['para_subtoks'])
+
+        # q_subtoks = raw_sample['para_subtoks']
+            
+        question = torch.LongTensor(self.binarize_list(q_subtoks))
         para_subtoks = raw_sample['para_subtoks']
         paragraph = torch.LongTensor(self.binarize_list(para_subtoks))
-        q_subtoks = raw_sample['q_subtoks']
-        question = torch.LongTensor(self.binarize_list(q_subtoks))
 
         if question.size(0) > self.max_query_length:
             question = question[:self.max_query_length]
@@ -262,6 +286,7 @@ def main(args):
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=50)
 
     qid2results = defaultdict(list)
+    qid2question = {}
 
     start_preds = []
     end_preds = []
@@ -310,14 +335,11 @@ def main(args):
                 final_text = get_final_text(tok_text, orig_text, basic_tokenizer, True)
 
                 qid2results[qid].append((final_text, ans_score, r_score))
+                qid2question[qid] = {'q': q, 'c': c}
 
                 start_preds.append(start)
                 end_preds.append(end)
 
-    if args.save:
-        save_path = os.path.join(args.data, args.save_name)
-        with open(save_path, 'w') as g:
-            json.dump(qid2results, g)
 
 
     # evaluation
@@ -328,10 +350,17 @@ def main(args):
 
     # load groundtruth
     qid2ground = {}
+    analysis = {}
     with open(args.answer_path) as f:
         for line in f.readlines():
             line = json.loads(line)
             qid2ground[line['qid']] = line['answer']
+            analysis[line['qid']] = {"gold": line['answer'], "pred": qid2results[line['qid']][0], 'q': qid2question[line['qid']]['q'], 'c': qid2question[line['qid']]['c']}
+
+    if args.save:
+        save_path = os.path.join(args.save_name)
+        with open(save_path, 'w') as g:
+            json.dump(analysis, g)
 
 
     f1_scores = [metric_max_over_ground_truths(f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
@@ -377,7 +406,7 @@ if __name__ == '__main__':
     parser.add_argument('--downsample', default=1.0, help='test on small portion of the data')
 
     # save the prediction file
-    parser.add_argument('--save-name', default='prediction_kdn.json')
+    parser.add_argument('--save-name', default='analysis.json')
     parser.add_argument('--eval-bsz', default=50, type=int)
     parser.add_argument('--save', action='store_true')
 

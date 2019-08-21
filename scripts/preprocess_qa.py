@@ -15,6 +15,8 @@ from fairseq.tokenization import BertTokenizer, whitespace_tokenize
 from fairseq import utils
 from fairseq.data.masked_lm_dictionary import BertDictionary
 
+q_words = [["how", "many"], ["how", "long"], ["how"], ["which"], ["what"], ["when"], ["whose"], ["who"], ["where"], ["why"]]
+
 def _process_samples(items, tokenizer):
 
     outputs = []
@@ -48,7 +50,23 @@ def _process_samples(items, tokenizer):
                 tok_to_orig_index.append(i)
                 all_doc_tokens.append(sub_token)
 
-        q = process(item['q'], tokenizer)
+        q_toks = tokenizer.basic_tokenizer.tokenize(item['q'])
+        replaced = False
+        for q_w in q_words:
+            if replaced:
+                break
+            for idx in range(len(q_toks)):
+                if q_toks[idx:idx+len(q_w)] == q_w:
+                    q_toks[idx:idx+len(q_w)] = ["[unused1]"]
+                    replaced = True
+                    break
+        q_subtoks = []
+        for ii in q_toks:
+            q_subtoks.extend(tokenizer.wordpiece_tokenizer.tokenize(
+                ii))
+        if q_subtoks[-1] == "?":
+            q_subtoks = q_subtoks[:-1]
+        q = q_subtoks
 
         answer_start = []
         answer_end = []
@@ -194,13 +212,13 @@ def main():
         '--input',
         metavar='DIR',
         help='input split path',
-        default='/private/home/xwhan/dataset/WebQ/splits'
+        default='/private/home/xwhan/dataset/squad1.1/splits'
     )
     parser.add_argument(
         '--output',
         metavar='DIR',
         help='Path for output',
-        default='/private/home/xwhan/dataset/WebQ/processed-splits'
+        default='/private/home/xwhan/dataset/squad1.1/processed-splits-uqa'
     )
 
     args = parser.parse_args()

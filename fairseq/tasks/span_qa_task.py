@@ -10,6 +10,7 @@ import itertools
 import numpy as np
 import os
 import torch
+import random
 
 from torch.utils.data import ConcatDataset
 
@@ -46,10 +47,11 @@ class SpanQATask(FairseqTask):
         """Add task-specific arguments to the parser."""
         parser.add_argument('data', help='path to  data directory', default='/private/home/xwhan/dataset/webq_qa')
         parser.add_argument('--max-length', type=int, default=512)
-        parser.add_argument('--max-query-length', type=int, default=18)
+        parser.add_argument('--max-query-length', type=int, default=25)
         parser.add_argument('--use-kdn', action="store_true")
         parser.add_argument('--final-metric', type=str,
                             default="loss", help="metric for model selection")
+        parser.add_argument('--use-shards', action='store_true', help='whether to use sharded data')
 
         # kdn parameters
         parser.add_argument('--use-mlm', action='store_true', help='whether add MLM loss for multi-task learning')
@@ -64,6 +66,7 @@ class SpanQATask(FairseqTask):
         self.valid_groups = ('classification_start', 'classification_end')
         self.tokenizer = BertTokenizer(os.path.join(args.data, 'vocab.txt'), do_lower_case=True)
         self.final_metric = args.final_metric
+        self.use_shards = args.use_shards
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -93,8 +96,10 @@ class SpanQATask(FairseqTask):
         loaded_raw_context_text = []
         stop = False
 
-        binarized_data_path = os.path.join(self.args.data, "binarized")
-        tokenized_data_path = os.path.join(self.args.data, "processed-splits")
+        binarized_data_path = os.path.join(self.args.data, "binarized-uqa")
+        tokenized_data_path = os.path.join(self.args.data, "processed-splits-uqa")
+
+        print(binarized_data_path, tokenized_data_path)
         
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
@@ -119,22 +124,26 @@ class SpanQATask(FairseqTask):
 
             if stop:
                 break
-
-            # load start and end labels
+            
             raw_path = os.path.join(tokenized_data_path, split_k)
+
             starts = []
             with open(os.path.join(raw_path, 'ans_start.txt'), 'r') as lbl_f:
                 lines = lbl_f.readlines()
                 for line in lines:
                     lbls = [int(x) for x in line.strip().split()]
-                    starts.append(lbls[0])
+                    starts.append(lbls)
             ends = []
             with open(os.path.join(raw_path, 'ans_end.txt'), 'r') as lbl_f:
                 lines = lbl_f.readlines()
                 for line in lines:
                     lbls = [int(x) for x in line.strip().split()]
-                    ends.append(lbls[0])
-            loaded_labels = list(zip(starts, ends))
+                    ends.append(lbls)
+            
+            for ss, ee in zip(starts, ends):
+                assert len(ss) == len(ee)
+                rand_idx = random.choice(list(range(len(ss)))) if split == 'train' else 0
+                loaded_labels.append((ss[rand_idx], ee[rand_idx]))
 
             with open(os.path.join(raw_path, 'q.txt'), 'r') as act_f:
                 lines = act_f.readlines()
@@ -146,8 +155,12 @@ class SpanQATask(FairseqTask):
                 for line in lines:
                     loaded_raw_context_text.append(line.strip())
 
-            with open(os.path.join(raw_path, 'sample_id.txt'), 'r') as id_f:
-                loaded_ids.extend([id.strip() for id in id_f.readlines()])
+            if os.path.exists(os.path.join(raw_path, f'sample_id.txt')):
+                with open(os.path.join(raw_path, 'sample_id.txt'), 'r') as id_f:
+                    loaded_ids.extend([id.strip() for id in id_f.readlines()])
+            else:
+                loaded_ids.extend([str(epoch) + "_" + str(ii)
+                                    for ii in range(len(loaded_raw_question_text))])
 
             print('| {} {} {} examples'.format(self.args.data, split_k, len(loaded_datasets[0][-1])))
 

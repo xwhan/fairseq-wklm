@@ -25,9 +25,11 @@ def get_grid(args):
         hyperparam('--save-interval', 1),
         hyperparam('--arch', 'span_qa', save_dir_key=lambda val: val),
         hyperparam('--task', 'span_qa'),
-        hyperparam("--max-epoch", 10),
+        hyperparam("--max-epoch", 8),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
-        hyperparam('--lr', [1e-5, 5e-6, 2e-5], save_dir_key=lambda val: f'lr{val}'),
+        # hyperparam('--lr', [1e-5, 2e-5, 5e-5], save_dir_key=lambda val: f'lr{val}'),
+        hyperparam('--lr', 1e-5,
+                   save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--lr-scheduler', "reduce_lr_on_plateau"),
         # hyperparam('--lr-shrink', 0.5),
         hyperparam('--final-metric', 'start_acc'),
@@ -55,10 +57,10 @@ def get_grid(args):
         hyperparam('--model-dim', 768),
         hyperparam("--ddp-backend", "no_c10d"),
         hyperparam('--fp16', True, binary_flag=True),
-        hyperparam('--last-dropout', [0.1, 0.2],
-                   save_dir_key=lambda val: f'ldrop{val}'),
+        hyperparam('--last-dropout', 0.1, save_dir_key=lambda val: f'ldrop{val}'),
+        # hyperparam('--use-shards'),
 
-        # hyperparam('--restore-file', "/checkpoint/xwhan/2019-07-11/reader_squad.span_qa.mxup61875.adam.lr1e-05.bert.crs_ent.seed4.bsz8.ngpu1/checkpoint_best.pt")
+        # hyperparam('--restore-file', "/checkpoint/xwhan/2019-08-20/uqa_bert.span_qa.adam.lr1e-05.bert_best.crs_ent.seed3.bsz8.ldrop0.1.ngpu32/checkpoint_best.pt")
     ]
 
 

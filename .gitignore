@@ -8,7 +8,8 @@ scripts/jobs
 scripts/stderr
 scripts/stdout
 scripts/scripts_ann
-scripts/nsample_scripts
+*/nsample_scripts
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

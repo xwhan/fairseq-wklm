@@ -139,7 +139,7 @@ def load_checkpoint(args, trainer):
         args.reset_optimizer,
         args.reset_lr_scheduler,
         eval(args.optimizer_overrides),
-        # reset_meters=args.reset_meters,x
+        # reset_meters=args.reset_meters,
     )
 
     if (
@@ -150,7 +150,8 @@ def load_checkpoint(args, trainer):
     ):
         save_checkpoint.best = extra_state['best']
 
-    if extra_state is not None and not args.reset_dataloader:
+    # if extra_state is not None and not args.reset_dataloader:
+    if extra_state is not None:
         # restore iterator from checkpoint
         itr_state = extra_state['train_iterator']
         epoch_itr = trainer.get_train_iterator(epoch=itr_state['epoch'])
@@ -161,7 +162,6 @@ def load_checkpoint(args, trainer):
     trainer.lr_step(epoch_itr.epoch)
 
     return extra_state, epoch_itr
-
 
 
 def load_checkpoint_to_cpu(path):
