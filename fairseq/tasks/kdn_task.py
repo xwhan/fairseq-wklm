@@ -50,6 +50,7 @@ class KDNTask(FairseqTask):
         parser.add_argument("--add-layer", action='store_true')
         parser.add_argument("--boundary-loss", action='store_true')
         parser.add_argument("--start-end", action='store_true')
+        parser.add_argument("--masking_ratio", default=0.15, type=float)
 
         parser.add_argument('--final-metric', type=str,
                             default="loss", help="metric for model selection")
@@ -64,6 +65,7 @@ class KDNTask(FairseqTask):
         self.add_layer = args.add_layer
         self.boundary_loss = args.boundary_loss
         self.final_metric = args.final_metric
+        self.masking_ratio = args.masking_ratio
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -87,14 +89,14 @@ class KDNTask(FairseqTask):
         loaded_datasets = [[]]
         stop = False
 
-        binarized_data_path = os.path.join(self.args.data, "binarized-v2")
-        tokenized_data_path = os.path.join(self.args.data, "processed-splits-v2")
+        binarized_data_path = os.path.join(self.args.data, "binarized-v3")
+        tokenized_data_path = os.path.join(self.args.data, "processed-splits-v3")
         
         ent_offsets = []
         ent_lens = []
         ent_lbls = []
 
-        epoch = epoch % 50
+        epoch = epoch % 20
 
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
@@ -158,7 +160,7 @@ class KDNTask(FairseqTask):
         shuffle = True if split == 'train' else False
         self.datasets[split] = KDNDataset(
             dataset, ent_lbls, ent_offsets, ent_lens, sizes, self.dictionary,
-            self.args.max_length, max_num_ent, shuffle=shuffle, use_mlm=self.use_mlm
+            self.args.max_length, max_num_ent, shuffle=shuffle, use_mlm=self.use_mlm, masking_ratio=self.masking_ratio
         )
 
     def extra_meters(self):

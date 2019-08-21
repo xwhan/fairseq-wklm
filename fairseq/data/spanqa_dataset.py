@@ -117,7 +117,6 @@ class SpanQADataset(FairseqDataset):
         text = torch.cat([sent1, sent2])
         segment1 = torch.zeros(sent1.size(0)).long()
         segment2 = torch.ones(sent2.size(0)).long()
-        # segment2 = torch.zeros(sent2.size(0)).long()
         segment = torch.cat([segment1, segment2])
         return text, segment
 

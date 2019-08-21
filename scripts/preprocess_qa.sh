@@ -8,8 +8,8 @@ DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
 # TASK_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/processed-splits"
 # OUT_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/binarized"
 
-TASK_DATA_FOLDER="/private/home/xwhan/dataset/squad1.1/processed-splits-uqa"
-OUT_DATA_FOLDER="/private/home/xwhan/dataset/squad1.1/binarized-uqa"
+TASK_DATA_FOLDER="/private/home/xwhan/dataset/WebQ/processed-splits"
+OUT_DATA_FOLDER="/private/home/xwhan/dataset/WebQ/binarized"
 
 VAR="q c"
 

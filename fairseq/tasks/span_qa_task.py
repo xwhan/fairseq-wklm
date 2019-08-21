@@ -96,8 +96,8 @@ class SpanQATask(FairseqTask):
         loaded_raw_context_text = []
         stop = False
 
-        binarized_data_path = os.path.join(self.args.data, "binarized-uqa")
-        tokenized_data_path = os.path.join(self.args.data, "processed-splits-uqa")
+        binarized_data_path = os.path.join(self.args.data, "binarized")
+        tokenized_data_path = os.path.join(self.args.data, "processed-splits")
 
         print(binarized_data_path, tokenized_data_path)
         

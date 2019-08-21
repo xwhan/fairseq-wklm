@@ -161,29 +161,28 @@ class ReaderDataset(Dataset):
         para_id = raw_sample['para_id']
         score = raw_sample.get('score', 0)
 
-        # process the 
-        q_toks = self.task.tokenizer.basic_tokenizer.tokenize(raw_sample['q'].lower())
-        replaced = False
-        for q_w in self.q_words:
-            if replaced:
-                break
-            for idx in range(len(q_toks)):
-                if q_toks[idx:idx+len(q_w)] == q_w:
-                    q_toks[idx:idx+len(q_w)] = ["[unused1]"]
-                    replaced = True
-                    break
-        q_subtoks = []
-        for ii in q_toks:
-            q_subtoks.extend(self.task.tokenizer.wordpiece_tokenizer.tokenize(
-                ii))
-        if q_subtoks[-1] == "?":
-            q_subtoks = q_subtoks[:-1]
+        # # process the 
+        # q_toks = self.task.tokenizer.basic_tokenizer.tokenize(raw_sample['q'].lower())
+        # replaced = False
+        # for q_w in self.q_words:
+        #     if replaced:
+        #         break
+        #     for idx in range(len(q_toks)):
+        #         if q_toks[idx:idx+len(q_w)] == q_w:
+        #             q_toks[idx:idx+len(q_w)] = ["[unused1]"]
+        #             replaced = True
+        #             break
+        # q_subtoks = []
+        # for ii in q_toks:
+        #     q_subtoks.extend(self.task.tokenizer.wordpiece_tokenizer.tokenize(
+        #         ii))
+        # if q_subtoks[-1] == "?":
+        #     q_subtoks = q_subtoks[:-1]
 
         # print(q_subtoks)
         # print(raw_sample['para_subtoks'])
 
-        # q_subtoks = raw_sample['para_subtoks']
-            
+        q_subtoks = raw_sample['q_subtoks'] 
         question = torch.LongTensor(self.binarize_list(q_subtoks))
         para_subtoks = raw_sample['para_subtoks']
         paragraph = torch.LongTensor(self.binarize_list(para_subtoks))

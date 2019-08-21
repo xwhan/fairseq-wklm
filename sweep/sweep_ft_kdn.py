@@ -38,7 +38,7 @@ def get_grid(args):
         # hyperparam("--lr-scheduler", "reduce_lr_on_plateau"),
         # hyperparam("--lr-shrink", 0.5),
         # hyperparam("--warmup-updates", 10000, save_dir_key=lambda val: f"warmup{val}"),
-        hyperparam('--last-dropout', 0.05),
+        # hyperparam('--last-dropout', 0.05),
         hyperparam('--log-interval', 5000),
         hyperparam('--model-dim', 768),
         hyperparam('--fp16', True, binary_flag=True),
@@ -46,7 +46,7 @@ def get_grid(args):
         hyperparam('--ddp-backend', "no_c10d"),
 
         hyperparam('--add-layer'),
-        hyperparam('--num-kdn', 4),
+        hyperparam('--num-kdn', 6),
         # hyperparam('--start-end')
         # hyperparam('--boundary-loss')
     ]
