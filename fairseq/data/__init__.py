@@ -41,6 +41,7 @@ from .sort_dataset import SortDataset
 from .spanqa_dataset import SpanQADataset
 from .kdn_dataset import KDNDataset
 from .re_dataset import REDataset
+from .spanqa_bce_dataset import SpanQABCEDataset
 
 from .iterators import (
     CountingIterator,
@@ -93,5 +94,6 @@ __all__ = [
     'ConcatSentencesDataset',
     'SpanQADataset',
     'KDNDataset',
-    'REDataset'
+    'REDataset',
+    'SpanQABCEDataset',
 ]

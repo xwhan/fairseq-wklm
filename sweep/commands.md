@@ -10,9 +10,10 @@ CUDA_VISIBLE_DEVICES=0 python scripts/evaluate_ranker.py /private/home/xwhan/dat
 
 # Span QA Experiments
 ## Baseline Debug
-python train.py --fp16 /checkpoint/xwhan/uqa --task span_qa --arch span_qa --save-interval 1 --max-update 30000 --lr 1e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion span_qa --final-metric start_acc --last-dropout 0.1 --use-shards --save-interval-updates 50 
+python train.py --fp16 /checkpoint/xwhan/uqa --task span_qa_bce --arch span_qa --save-interval 1 --max-update 30000 --lr 1e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion span_qa_bce --final-metric start_acc --last-dropout 0.05 --use-shards --save-interval-updates 50 
 ## KDN Debug
-python train.py --fp16 /private/home/xwhan/dataset/webq_qa --task span_qa --arch span_qa --save-interval 1 --max-update 30000 --lr 1e-05 --bert-path /checkpoint/xwhan/2019-08-16/kdn_v3_start_add_4_layer.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion span_qa --save-interval-updates 10 --final-metric start_acc --use-kdn --add-layer
+python train.py --fp16 /private/home/xwhan/dataset/squad1.1 --task span_qa --arch span_qa --save-interval 1 --max-update 30000 --lr 1e-05 --bert-path /checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 8 --optimizer adam --criterion span_qa --save-interval-updates 10 --final-metric start_acc --use-kdn --boundary-loss
+## BCELoss debug
 
 
 ## sweep for WebQuesions
@@ -23,11 +24,10 @@ python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/triviaqa -p trivi
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/WebQ -p WebQ_kdn -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
 
-
 ## sweep for SQuAD 1.1 
-python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/squad1.1 -p squad_kdn_v3_start_end -t -1 -g 2 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/squad1.1 -p squad_kdn_v2_boundary -t -1 -g 2 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
-python sweep/sweep_ft_spanqa.py -d /checkpoint/xwhan/uqa -p uqa_only_first_entity -t -1 -g 4 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+python sweep/sweep_ft_spanqa.py -d /checkpoint/xwhan/uqa -p uqa_bce_squad_valid -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
 ## evaluation for WebQ
 * use kdn model 
@@ -42,10 +42,11 @@ python scripts/evaluate_reader.py /private/home/xwhan/dataset/webq_qa --model-pa
 ## Evaluation for SQuAD
 * KDN model
 ```
-python scripts/evaluate_reader.py /private/home/xwhan/dataset/squad1.1 --model-path /checkpoint/xwhan/2019-08-20/uqa_bert_rerun.span_qa.adam.lr1e-05.bert_best.crs_ent.seed3.bsz8.ldrop0.1.ngpu32/checkpoint_last.pt --arch span_qa --eval-data /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json --answer-path /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json
+python scripts/evaluate_reader.py /private/home/xwhan/dataset/squad1.1 --model-path /checkpoint/xwhan/2019-08-22/uqa_again.span_qa.adam.lr1e-05.bert_best.crs_ent.seed3.bsz8.ldrop0.05.ngpu16/checkpoint_1_19000.pt --arch span_qa --eval-data /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json --answer-path /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json
 ```
 * BERT model
-python scripts/evaluate_reader.py /private/home/xwhan/dataset/squad1.1 --model-path /checkpoint/xwhan/2019-08-18/squad_bert.span_qa.adam.lr2e-05.bert_best.crs_ent.seed3.bsz8.ldrop0.2.ngpu2/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json --answer-path /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json
+python scripts/evaluate_reader.py /private/home/xwhan/dataset/squad1.1 --model-path /checkpoint/xwhan/2019-08-22/squad_kdn_v2_boundary.span_qa.adam.lr1e-05.kdn_v2_boundary.seed3.bsz8.ldrop0.2.ngpu2/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json --answer-path /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json
+
 
 ------------------------------------
 
@@ -55,9 +56,17 @@ squeue -u xwhan | grep 1695 | awk '{print $1}' | xargs -n 1 scancel
 ------------------------------------
 # KDN Pretrainning Experiments
 # kdn debug
-python train.py --fp16 /checkpoint/xwhan/wiki_data --task kdn --arch kdn --save-interval 1 --max-update 1000000 --lr 1e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 4 --optimizer adam --criterion kdn_loss --ddp-backend no_c10d --save-interval-updates 1000 --use-mlm --last-dropout 0.1 --start-end --add-layer --num-kdn 6 --masking_ratio
-# sweep for kdn
-python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data -p kdn_v3_start_add_6_layer -t -1 -g 8 -n 4
+python train.py --fp16 /checkpoint/xwhan/wiki_data --task kdn --arch kdn --save-interval 1 --max-update 1000000 --lr 1e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 4 --optimizer adam --criterion kdn_loss --ddp-backend no_c10d --save-interval-updates 1000 --use-mlm --last-dropout 0.1 --restore-file /checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt --boundary-loss --save-interval-updates 1
+# sweep for kdn v2
+python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_v2 -p kdn_v2_boundary_continue -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
+
+python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_v3 -p kdn_v3_boundary_continue -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
+
+# sweep for kdn v3
+python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_v3 -p kdn_v3_boundary -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
+
+# sweep for kdn m2 k10
+python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_m2_k10 -p kdn_m2_k10_boundary -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
 
 # data processing flow
 * replace the entities, in process_wiki, `python process_wikipedia.py`
@@ -85,7 +94,7 @@ python scripts/evaluate_re.py --arch re /private/home/xwhan/dataset/tacred --mod
 ```
 
 ## sweep relation extraction
-python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_kdn_marker -t -1 -g 2 -n 1 
+python sweep/sweep_ft_re.py -d /private/home/xwhan/dataset/tacred -p re_kdn_v2_bound_marker -t -1 -g 2 -n 1 
 
 # tensorboard logs
 ssh -J prn-fairjmp02 -L 8889:localhost:8889 100.97.67.36

@@ -50,7 +50,7 @@ class KDNTask(FairseqTask):
         parser.add_argument("--add-layer", action='store_true')
         parser.add_argument("--boundary-loss", action='store_true')
         parser.add_argument("--start-end", action='store_true')
-        parser.add_argument("--masking_ratio", default=0.15, type=float)
+        parser.add_argument("--masking-ratio", default=0.15, type=float)
 
         parser.add_argument('--final-metric', type=str,
                             default="loss", help="metric for model selection")
@@ -89,14 +89,14 @@ class KDNTask(FairseqTask):
         loaded_datasets = [[]]
         stop = False
 
-        binarized_data_path = os.path.join(self.args.data, "binarized-v3")
-        tokenized_data_path = os.path.join(self.args.data, "processed-splits-v3")
+        binarized_data_path = os.path.join(self.args.data, "binarized")
+        tokenized_data_path = os.path.join(self.args.data, "processed-splits")
         
         ent_offsets = []
         ent_lens = []
         ent_lbls = []
 
-        epoch = epoch % 20
+        epoch = epoch % len(os.listdir(os.path.join(binarized_data_path, 'train')))
 
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')

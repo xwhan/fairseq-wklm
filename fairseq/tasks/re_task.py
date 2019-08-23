@@ -61,6 +61,8 @@ class RETask(FairseqTask):
         parser.add_argument("--add-layer", action='store_true')
         parser.add_argument("--boundary-loss", action='store_true')
         parser.add_argument("--start-end", action='store_true')
+        parser.add_argument("--num-kdn", default=4, type=int)
+        parser.add_argument("--masking-ratio", default=0.15, type=float)
 
     def __init__(self, args, dictionary):
         super().__init__(args)

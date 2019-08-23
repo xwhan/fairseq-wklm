@@ -15,7 +15,7 @@ import random
 from torch.utils.data import ConcatDataset
 
 from fairseq.data import (
-    SpanQADataset, TokenBlockDataset,
+    SpanQABCEDataset, TokenBlockDataset,
     IndexedDataset)
 from fairseq.meters import ClassificationMeter
 
@@ -26,8 +26,8 @@ from fairseq.data.masked_lm_dictionary import BertDictionary
 from fairseq.tokenization import BertTokenizer
 
 
-@register_task('span_qa')
-class SpanQATask(FairseqTask):
+@register_task('span_qa_bce')
+class SpanQABCETask(FairseqTask):
     """
     Classify a sentence
 
@@ -59,7 +59,6 @@ class SpanQATask(FairseqTask):
         parser.add_argument("--start-end", action='store_true')
         parser.add_argument("--boundary-loss", action='store_true')
         parser.add_argument("--num-kdn", default=4, type=int)
-        parser.add_argument("--masking-ratio", default=0.15, type=float)
 
     def __init__(self, args, dictionary):
         super().__init__(args)
@@ -143,10 +142,7 @@ class SpanQATask(FairseqTask):
                     lbls = [int(x) for x in line.strip().split()]
                     ends.append(lbls)
             
-            for ss, ee in zip(starts, ends):
-                assert len(ss) == len(ee)
-                rand_idx = random.choice(list(range(len(ss)))) if split == 'train' else 0
-                loaded_labels.append((ss[rand_idx], ee[rand_idx]))
+            loaded_labels = list(zip(starts, ends))
 
             with open(os.path.join(raw_path, 'q.txt'), 'r') as act_f:
                 lines = act_f.readlines()
@@ -186,7 +182,7 @@ class SpanQATask(FairseqTask):
 
         shuffle = True if split == 'train' else False
 
-        self.datasets[split] = SpanQADataset(
+        self.datasets[split] = SpanQABCEDataset(
             dataset_q, dataset_c, loaded_labels, 
             loaded_ids, loaded_raw_question_text, loaded_raw_context_text, sizes_q, 
             sizes_c, self.dictionary,
@@ -213,13 +209,16 @@ class SpanQATask(FairseqTask):
         if is_valid:
             loss, sample_size, logging_output, outs = outputs
             logging_output['extra_metrics'] = {}
-            for g, o, t in zip(self.valid_groups, outs, sample['target']):
-                t = t.squeeze(-1)
-                pred_t = torch.argmax(o, dim=-1)
-                tp = t.eq(pred_t).long().sum().item()
-                tn = 0
-                fp = t.size(0) - tp
-                fn = 0
+            for g, o, t in zip(self.valid_groups, outs, (sample['start_target'], sample['end_target'])):
+                pred_t = torch.argmax(o, dim=-1).tolist()
+
+                tp, tn, fp, fn = 0.,0.,0.,0.
+                for sample_idx, pred_pos in enumerate(pred_t):
+                    if t[sample_idx, pred_pos] == 1:
+                        tp += 1
+                    else:
+                        fp += 1
+    
                 logging_output['extra_metrics'][g] = (tp, tn, fp, fn)
         else:
             loss, sample_size, logging_output = outputs

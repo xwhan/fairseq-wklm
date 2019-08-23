@@ -120,7 +120,7 @@ class KDN(BaseFairseqModel):
         """Add model-specific arguments to the parser."""
         parser.add_argument('--bert-path', metavar='PATH', help='path to elmo model')
         parser.add_argument('--model-dim', type=int, metavar='N', help='decoder input dimension')
-        parser.add_argument('--last-dropout', type=float, metavar='D', help='dropout before projection')
+        parser.add_argument('--last-dropout', type=float, metavar='D', default=0.0, help='dropout before projection')
 
     @classmethod
     def build_model(cls, args, task):

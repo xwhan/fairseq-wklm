@@ -81,7 +81,7 @@ class RE(BaseFairseqModel):
             print(f'| fine-tuning kdn pretrained model...')
             task = KDNTask(args, dictionary)
             models, _ = checkpoint_utils.load_model_ensemble(
-                [args.bert_path], arg_overrides={"add_layer": args.add_layer, "last_dropout": 0.0, "start_end": args.start_end, "boundary_loss": args.boundary_loss}, task=task)
+                [args.bert_path], arg_overrides={"last_dropout": 0.0, "start_end": args.start_end, "boundary_loss": args.boundary_loss, "num_kdn": args.num_kdn, 'masking_ratio': args.masking_ratio}, task=task)
         elif args.use_hf:
             print(f'| fine-tuning hf bert pretrained model...')
             model = BertModel.from_pretrained("bert-large-cased")

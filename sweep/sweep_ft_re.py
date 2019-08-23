@@ -35,7 +35,7 @@ def get_grid(args):
         # hyperparam('--bert-path', '/checkpoint/ves/2019-05-31/mlm-big-bookwiki.st512.mt4096.uf1.bert_large.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip4.0.adam_eps6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu64/checkpoint_best.pt', save_dir_key=lambda val: f'bert_large'),
 
         hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-                   save_dir_key=lambda val: f'kdn_best'),
+                   save_dir_key=lambda val: f'kdn_v2_boundary'),
         hyperparam("--use-kdn"),
         hyperparam("--boundary-loss"),
 
@@ -45,7 +45,7 @@ def get_grid(args):
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_last.pt', save_dir_key=lambda val: f'kdn_last'),
 
         hyperparam('--sentence-avg', True, binary_flag=True),
-        hyperparam('--save-interval-updates', 500),
+        hyperparam('--save-interval-updates', 2000),
         hyperparam('--criterion', ['cross_entropy'], save_dir_key=lambda val: f'crs_ent'),
         hyperparam('--seed', 3, save_dir_key=lambda val: f'seed{val}'),
         hyperparam('--max-sentences', [8, 16], save_dir_key=lambda val: f'bsz{val}'),

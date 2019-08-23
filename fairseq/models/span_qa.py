@@ -47,7 +47,7 @@ class SpanQA(BaseFairseqModel):
         """Add model-specific arguments to the parser."""
         parser.add_argument('--bert-path', metavar='PATH', help='path to pretrained bert model')
         parser.add_argument('--model-dim', type=int, metavar='N', help='decoder input dimension')
-        parser.add_argument('--last-dropout', type=float, metavar='D', help='dropout before projection')
+        parser.add_argument('--last-dropout', type=float, metavar='D', default=0.0, help='dropout before projection')
         
     @classmethod
     def build_model(cls, args, task):
@@ -73,7 +73,7 @@ class SpanQA(BaseFairseqModel):
             print(f'| fine-tuning kdn pretrained model...')
             task = KDNTask(args, dictionary)
             models, _ = checkpoint_utils.load_model_ensemble(
-            [args.bert_path], arg_overrides={"last_dropout": 0.0, "start_end": args.start_end, "boundary_loss": args.boundary_loss, "num_kdn": args.num_kdn}, task=task)
+            [args.bert_path], arg_overrides={"last_dropout": 0.0, "start_end": args.start_end, "boundary_loss": args.boundary_loss, "num_kdn": args.num_kdn, 'masking_ratio': args.masking_ratio}, task=task)
         else:
             print(f'| fine-tuning bert pretrained model...')
             task = MaskedLMTask(args, dictionary)

@@ -140,6 +140,23 @@ def process_raw(data_path, tokenizer, out_path):
             g.write(json.dumps(_) + '\n')
 
 
+# def build_uqa_eval():
+#     raw_path = "/checkpoint/xwhan/uqa/processed-splits/valid"
+
+#     q_toks = []
+#     with open(os.path.join(raw_path, 'q.txt'), 'r') as lbl_f:
+#         lines = lbl_f.readlines()
+#         for line in lines:
+#             q = [x for x in line.strip().split()]
+#             q_toks.append(q)
+#     c_toks = []
+#     with open(os.path.join(raw_path, 'c.txt'), 'r') as lbl_f:
+#         lines = lbl_f.readlines()
+#         for line in lines:
+#             c = [x for x in line.strip().split()]
+#             c_toks.append(c)
+    
+
 class ReaderDataset(Dataset):
     """docstring for RankerDataset"""
     def __init__(self, task, data_path, max_query_lengths, max_length, downsample=1.0):
@@ -266,7 +283,7 @@ def collate(samples):
         },
         'nsentences': samples[0]['sentence'].size(0),
     }
-
+       
 
 def main(args):
     task = tasks.setup_task(args)

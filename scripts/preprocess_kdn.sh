@@ -5,8 +5,8 @@ DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
 SPLITS="train valid"
 
 DATASET="kdn"
-TASK_DATA_FOLDER="/checkpoint/xwhan/wiki_data/processed-splits-v2"
-OUT_DATA_FOLDER="/checkpoint/xwhan/wiki_data/binarized-v2"
+TASK_DATA_FOLDER="/checkpoint/xwhan/wiki_data_v3/processed-splits"
+OUT_DATA_FOLDER="/checkpoint/xwhan/wiki_data_v3/binarized"
 
 # for shard_id in $(seq 0 48)
 #     do
