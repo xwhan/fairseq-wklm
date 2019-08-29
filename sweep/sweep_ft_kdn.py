@@ -40,7 +40,7 @@ def get_grid(args):
         # hyperparam("--warmup-updates", 10000, save_dir_key=lambda val: f"warmup{val}"),
         # hyperparam('--last-dropout', 0.1),
         hyperparam('--last-dropout', 0.05),
-        hyperparam('--log-interval', 20000),
+        hyperparam('--log-interval', 50000),
         hyperparam('--model-dim', 768),
         hyperparam('--fp16', True, binary_flag=True),
         hyperparam('--use-mlm'),
@@ -51,9 +51,10 @@ def get_grid(args):
         # hyperparam('--start-end'), 
 
         # hyperparam('--restore-file', "/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt"),
-        hyperparam('--save-interval-updates', 10000),
+        # hyperparam('--save-interval-updates', 50000),
 
-        hyperparam('--boundary-loss')
+        hyperparam('--boundary-loss'),
+        hyperparam('--masking-ratio', 0.15),
     ]
 
 

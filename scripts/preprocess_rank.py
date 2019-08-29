@@ -23,7 +23,7 @@ def _process_samples(items, tokenizer):
     return outputs
 
 def process_files(data_folder, output_folder):
-    splits = ['train', 'valid', 'test']
+    splits = ['train', 'valid']
     tokenizer = BertTokenizer(
         '/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt', do_lower_case=True)
 
@@ -62,13 +62,13 @@ def main():
         '--input',
         metavar='DIR',
         help='input split path',
-        default='/private/home/xwhan/dataset/WebQ-Ranking/splits'
+        default='/private/home/xwhan/dataset/triviaqa-ranking/splits'
     )
     parser.add_argument(
         '--output',
         metavar='DIR',
         help='Path for output',
-        default='/private/home/xwhan/dataset/WebQ-Ranking/processed-splits'
+        default='/private/home/xwhan/dataset/triviaqa-ranking/processed-splits'
     )
 
     args = parser.parse_args()

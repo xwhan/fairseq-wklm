@@ -1,6 +1,8 @@
+import hashlib
 import json
 import sys
 import torch
+import torch.nn as nn
 from tqdm import tqdm
 import os
 
@@ -21,6 +23,7 @@ import collections
 from fairseq.tokenization import BasicTokenizer
 
 from official_eval import f1_score, exact_match_score, metric_max_over_ground_truths
+
 
 def _load_models(args, task):
     models, _model_args = checkpoint_utils.load_model_ensemble(
@@ -140,22 +143,8 @@ def process_raw(data_path, tokenizer, out_path):
             g.write(json.dumps(_) + '\n')
 
 
-# def build_uqa_eval():
-#     raw_path = "/checkpoint/xwhan/uqa/processed-splits/valid"
-
-#     q_toks = []
-#     with open(os.path.join(raw_path, 'q.txt'), 'r') as lbl_f:
-#         lines = lbl_f.readlines()
-#         for line in lines:
-#             q = [x for x in line.strip().split()]
-#             q_toks.append(q)
-#     c_toks = []
-#     with open(os.path.join(raw_path, 'c.txt'), 'r') as lbl_f:
-#         lines = lbl_f.readlines()
-#         for line in lines:
-#             c = [x for x in line.strip().split()]
-#             c_toks.append(c)
-    
+def hash_q_id(question):
+    return hashlib.md5(question.encode()).hexdigest()
 
 class ReaderDataset(Dataset):
     """docstring for RankerDataset"""
@@ -177,27 +166,6 @@ class ReaderDataset(Dataset):
         qid = raw_sample['qid']
         para_id = raw_sample['para_id']
         score = raw_sample.get('score', 0)
-
-        # # process the 
-        # q_toks = self.task.tokenizer.basic_tokenizer.tokenize(raw_sample['q'].lower())
-        # replaced = False
-        # for q_w in self.q_words:
-        #     if replaced:
-        #         break
-        #     for idx in range(len(q_toks)):
-        #         if q_toks[idx:idx+len(q_w)] == q_w:
-        #             q_toks[idx:idx+len(q_w)] = ["[unused1]"]
-        #             replaced = True
-        #             break
-        # q_subtoks = []
-        # for ii in q_toks:
-        #     q_subtoks.extend(self.task.tokenizer.wordpiece_tokenizer.tokenize(
-        #         ii))
-        # if q_subtoks[-1] == "?":
-        #     q_subtoks = q_subtoks[:-1]
-
-        # print(q_subtoks)
-        # print(raw_sample['para_subtoks'])
 
         q_subtoks = raw_sample['q_subtoks'] 
         question = torch.LongTensor(self.binarize_list(q_subtoks))
@@ -283,7 +251,7 @@ def collate(samples):
         },
         'nsentences': samples[0]['sentence'].size(0),
     }
-       
+
 
 def main(args):
     task = tasks.setup_task(args)
@@ -292,11 +260,13 @@ def main(args):
     # assert False
 
     # process_raw("/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json", task.tokenizer, "/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json")
+    # assert False
 
     model = _load_models(args, task)
-    # model.half()
+    model.half()
     model.eval()
     model.cuda()
+    model = nn.DataParallel(model)
 
     eval_dataset = ReaderDataset(task, args.eval_data, args.max_query_length, args.max_length, args.downsample)
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=50)
@@ -315,7 +285,8 @@ def main(args):
             start_out, end_out, paragraph_mask = model(**batch_cuda['net_input'])
             outs = (start_out, end_out)
             questions_mask = paragraph_mask.ne(1)
-            paragraph_outs = [o.view(-1, o.size(1)).masked_fill(questions_mask, -1e10) for o in outs]
+            paragraph_outs = [
+                o.view(-1, o.size(1)).float().masked_fill(questions_mask,  -1e10).type_as(o) for o in outs]
             outs = paragraph_outs
             ranking_scores = batch_data['scores']
             para_offset = batch_data['para_offset']
@@ -326,6 +297,8 @@ def main(args):
             max_seq_len = span_scores.size(1)
             span_mask = np.tril(np.triu(np.ones((max_seq_len, max_seq_len)), 0), max_answer_lens)
             span_mask = span_scores.data.new(max_seq_len, max_seq_len).copy_(torch.from_numpy(span_mask))
+            span_scores = span_scores.float()
+            span_mask = span_mask.float()
             span_scores = span_scores - 1e10 * (1 - span_mask[None].expand_as(span_scores))
 
             start_position = span_scores.max(dim=2)[0].max(dim=1)[1].tolist()
@@ -370,8 +343,24 @@ def main(args):
     with open(args.answer_path) as f:
         for line in f.readlines():
             line = json.loads(line)
+            if 'qid' not in line:
+                line['qid'] = hash_q_id(line['question'])
             qid2ground[line['qid']] = line['answer']
             analysis[line['qid']] = {"gold": line['answer'], "pred": qid2results[line['qid']][0], 'q': qid2question[line['qid']]['q'], 'c': qid2question[line['qid']]['c']}
+    
+    # save the predictions for tuninng
+    for alpha in np.arange(0, 1.05, 0.05):
+        qid2pred = {}
+        for qid in qid2results.keys():
+            qid2results[qid].sort(key=lambda x: combine(x[1], x[2], alpha), reverse=True)
+            qid2pred[qid] = qid2results[qid][0][0]
+        f1_scores = [metric_max_over_ground_truths(
+            f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
+        em_scores = [metric_max_over_ground_truths(
+            exact_match_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
+        print(f'Alpha: {alpha}')
+        print(f'f1 score {np.mean(f1_scores)}')
+        print(f'em score {np.mean(em_scores)}')
 
     if args.save:
         save_path = os.path.join(args.save_name)
@@ -387,8 +376,8 @@ def main(args):
     print(f'em score {np.mean(em_scores)}')
 
 def combine(s1, s2, alpha=0.1):
-    # return s1 * alpha + s2 * (1 - alpha)
-    return s1 # use answer score
+    return s1 * alpha + s2 * (1 - alpha)
+    # return s1 # use answer score
 
 def metrics(args):
     prediction = json.load(open('/private/home/xwhan/dataset/webq_qa/prediction.json'))
@@ -417,13 +406,15 @@ if __name__ == '__main__':
     parser = options.get_training_parser('span_qa')
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
 
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json', type=str)
-    parser.add_argument('--answer-path', default='/private/home/xwhan/dataset/webq_qa/splits/test.json')
+    parser.add_argument(
+        '--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/valid_with_scores_best.json', type=str)
+    parser.add_argument(
+        '--answer-path', default='/private/home/xwhan/dataset/WebQ/raw/valid.json')
     parser.add_argument('--downsample', default=1.0, help='test on small portion of the data')
 
     # save the prediction file
     parser.add_argument('--save-name', default='analysis.json')
-    parser.add_argument('--eval-bsz', default=50, type=int)
+    parser.add_argument('--eval-bsz', default=128, type=int)
     parser.add_argument('--save', action='store_true')
 
     args = options.parse_args_and_arch(parser)

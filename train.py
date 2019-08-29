@@ -252,7 +252,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
 
         misclassified = []
         for sample in progress:
-            log_output = trainer.valid_step(sample)
+            log_output = trainer.valid_step(sample) # meter updated inside
 
             for k, v in log_output.items():
                 if k in ['loss', 'nll_loss', 'ntokens', 'nsentences', 'sample_size', 'extra_metrics']:

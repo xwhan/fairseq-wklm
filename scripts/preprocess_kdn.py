@@ -66,7 +66,8 @@ def divide_examples(raw_folder="/private/home/xwhan/Wikipedia/tokenized", outfol
         print(f'Read {len(samples)} samples in total from {k}st file...')
 
         if k == len(tokenized_files) - 1: # the last file
-            valid_num = int(0.2 * len(samples))
+            # valid_num = int(0.2 * len(samples))
+            valid_num = 50000
             splits = {'train': samples[:-valid_num], 'valid': samples[-valid_num:]}
         else:
             splits = {'train': samples}
@@ -128,4 +129,4 @@ def divide_examples(raw_folder="/private/home/xwhan/Wikipedia/tokenized", outfol
         print(f'Split into {num_chunks} chunks...')
 
 if __name__ == '__main__':
-    divide_examples(raw_folder="/checkpoint/xwhan/wiki_data/raw-m2-k10", outfolder="/checkpoint/xwhan/wiki_data/processed-splits-m2-k10")
+    divide_examples(raw_folder="/checkpoint/xwhan/wiki_data_mlm/raw/shards", outfolder="/checkpoint/xwhan/wiki_data/processed-splits-m2-k10")

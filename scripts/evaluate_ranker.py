@@ -6,6 +6,7 @@ from multiprocessing import Pool
 import json
 import sys
 import torch
+import torch.nn as nn
 from tqdm import tqdm
 import torch.nn.functional as F
 from collections import defaultdict
@@ -19,6 +20,8 @@ from torch.utils.data import DataLoader, Dataset
 from fairseq.tokenization import BertTokenizer
 import numpy as np
 import hashlib
+
+from evaluate_reader import build_map
 
 def hash_q_id(question):
     return hashlib.md5(question.encode()).hexdigest()
@@ -92,7 +95,7 @@ class RankerDataset(Dataset):
         '/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt', do_lower_case=True)
         data = [json.loads(item) for item in open(self.data_path)]
 
-        num_workers = 20
+        num_workers = 30
         chunk_size= len(data) // num_workers
         offsets= [_ * chunk_size for _ in range(0, num_workers)] + [len(data)]
         pool= Pool(processes=num_workers)
@@ -150,6 +153,8 @@ def main(args):
     model.eval()
     model.cuda()
 
+    model = nn.DataParallel(model)
+
     eval_dataset = RankerDataset(task, args.eval_data)
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz,
                             collate_fn=collate, num_workers=20, pin_memory=True)
@@ -190,26 +195,55 @@ def main(args):
         for para_id, score in v:
             topk_paras[k][para_id] = score
 
-    # import pdb;pdb.set_trace()
+    tokenizer = BertTokenizer(
+        '/private/home/xwhan/fairseq-py/vocab_dicts/vocab.txt', do_lower_case=True)
 
     # prepare data for qa
     with open(args.save_path, 'w') as f:
-        # write scores to raw data for QA
-        for sample in eval_dataset.raw_data:
-            qid = sample['qid']
-            para_id = sample['para_id']
-            if para_id in topk_paras[qid]:
-                sample['score'] = topk_paras[qid][para_id]
-                f.write(json.dumps(sample) + '\n')
+        # write scores to raw data for finding answers 
+        num_workers = 30
+        chunk_size = len(eval_dataset.raw_data) // num_workers
+        offsets = [
+            _ * chunk_size for _ in range(0, num_workers)] + [len(eval_dataset.raw_data)]
+        pool = Pool(processes=num_workers)
+        print(f'Start multi-processing with {num_workers} workers....')
+        results = [pool.apply_async(_process_qa_samples, args=(
+            eval_dataset.raw_data[offsets[work_id]: offsets[work_id + 1]], tokenizer, topk_paras)) for work_id in range(num_workers)]
+        outputs = [p.get() for p in results]
+        samples = []
+        for o in outputs:
+            samples.extend(o)
+        for s in samples:
+            f.write(json.dumps(s) + '\n')
+        print(f'Wrote {len(samples)} paragraphs in total')
+
+
+def _process_qa_samples(samples, tokenizer, topk_paras):
+    outputs = []
+    for sample in samples:
+        qid = sample['qid']
+        para_id = sample['para_id']
+        sample['q_subtoks'] = sample['q_toks']
+        sample['para_subtoks'] = sample['para_toks']
+        del sample['q_toks']
+        del sample['para_toks']
+        orig_to_tok_index, tok_to_orig_index, doc_tokens, wp_tokens = build_map(sample['para'], tokenizer)
+        sample['tok_to_orig_index'] = tok_to_orig_index
+        sample['para_toks'] = doc_tokens
+        if para_id in topk_paras[qid]:
+            sample['score'] = topk_paras[qid][para_id]
+            outputs.append(sample)
+    return outputs
 
 if __name__ == '__main__':
     parser = options.get_training_parser('span_qa')
     # parser.add_argument('--criterion', default='cross_entropy')
-    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-07-05/ranker_neg10.finetuning_paragraph_ranker.mxup100000.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt')
+    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated',
+                        default='/checkpoint/xwhan/2019-08-18/WebQ_ranking_baseline.finetuning_paragraph_ranker.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt')
     parser.add_argument('--topk', default=20, type=int, help="how many paragraphs selected for open-domain QA")
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/test.json', type=str)
-    parser.add_argument('--save-path', default='/private/home/xwhan/dataset/WebQ/raw/test_with_scores.json', type=str)
-    parser.add_argument('--eval-bsz', default=64, type=int)
+    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/triviaqa/raw/valid.json', type=str)
+    parser.add_argument('--save-path', default='/private/home/xwhan/dataset/triviaqa/raw/valid_with_scores_best.json', type=str)
+    parser.add_argument('--eval-bsz', default=128, type=int)
 
     args = options.parse_args_and_arch(parser)
     # args = parser.parse_args()

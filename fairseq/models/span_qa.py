@@ -77,8 +77,7 @@ class SpanQA(BaseFairseqModel):
         else:
             print(f'| fine-tuning bert pretrained model...')
             task = MaskedLMTask(args, dictionary)
-            models, _ = checkpoint_utils.load_model_ensemble(
-            [args.bert_path], arg_overrides={
+            models, _ = checkpoint_utils.load_model_ensemble([args.bert_path], arg_overrides={
                 'remove_head': True, 'share_encoder_input_output_embed': False
             }, task=task)
 

@@ -257,7 +257,6 @@ class REDataset(Dataset):
                 ids.append(lbl)
 
         samples = []
-
         for sent, e1_start, e2_start, lbl, id_, e1_len, e2_len in zip(sents, e1_offsets, e2_offsets, loaded_labels, ids, e1_lens, e2_lens):
             samples.append({"sent": sent, "e1_start": e1_start, "e2_start": e2_start, "lbl": lbl, "id": id_, 'e1_len': e1_len, 'e2_len': e2_len})
 
@@ -266,7 +265,7 @@ class REDataset(Dataset):
 if __name__ == '__main__':
     parser = options.get_training_parser('re')
     parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-12/re_marker_only_bert_large.re.adam.lr1e-05.bert_large.crs_ent.seed3.bsz4.maxlen256.drop0.2.ngpu8/checkpoint_best.pt')
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/tacred/processed-splits/test', type=str)
+    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/tacred/processed-splits/valid', type=str)
     parser.add_argument('--eval-bsz', default=64, type=int)
     args = options.parse_args_and_arch(parser)
 
@@ -277,7 +276,7 @@ if __name__ == '__main__':
     eval_dataset = REDataset(task, args.eval_data, args.max_length, use_marker=True)
     relation2id = eval_dataset.relation2id
     id2relation = {v: k for k, v in relation2id.items()}
-    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=10)
+    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=20)
 
     id2gold = {}
     id2pred = {}

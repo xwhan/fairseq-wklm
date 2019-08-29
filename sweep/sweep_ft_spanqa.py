@@ -4,53 +4,48 @@ from functools import reduce
 import sweep
 from sweep import hyperparam
 
-
-def get_lr_str(val):
-    uniq_lr = reduce(
-        lambda x, y: x + y if x[-1] != y[-1] else x,
-        map(lambda x: [x], val.split(','))
-    )
-    return ','.join(uniq_lr)
-
-
-def get_filter_str(val):
-    f = eval(val)
-    s = f'cf{f[0][1]}'
-    return s
-
-max_update= (100000 // 8) * 15
-
 def get_grid(args):
     return [
         hyperparam('--save-interval', 1),
         hyperparam('--arch', 'span_qa', save_dir_key=lambda val: val),
         hyperparam('--task', 'span_qa'),
 
-        hyperparam("--max-epoch", 8),
+        hyperparam("--max-epoch", 10),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
-        hyperparam('--lr', [1e-5, 5e-6, 2e-5], save_dir_key=lambda val: f'lr{val}'),
+        hyperparam('--lr', [1e-5, 5e-6], save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--lr', 1e-5,
                 #    save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--lr-scheduler', "reduce_lr_on_plateau"),
         # hyperparam('--lr-shrink', 0.5),
         hyperparam('--final-metric', 'start_acc'),
 
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v3_start_end.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-        #            save_dir_key=lambda val: f'kdn_best'),
-        # hyperparam("--use-kdn"),
-        # hyperparam("--start-end"),
 
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v3_start_add_4_layer.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-        #            save_dir_key=lambda val: f'kdn_v3_start_add4'),
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-23/kdn_m2_k10_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_m2_k10'),
         # hyperparam("--use-kdn"),
-        # hyperparam('--add-layer'),
+        # hyperparam('--boundary-loss'),
+
+
+        # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-08-23/kdn_v2_boundary_2layer.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_v2_2layer'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
+        # hyperparam("--add-layer"),
+        # hyperparam("--num-kdn", 2),
+
+
+
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-23/kdn_v2_boundary_continue.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_v2_boundary_c'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
+
 
 
         hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
                    save_dir_key=lambda val: f'kdn_v2_boundary'),
         hyperparam("--use-kdn"),
         hyperparam('--boundary-loss'),
-
 
 
         # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',save_dir_key=lambda val: f'bert_best'),
@@ -67,11 +62,13 @@ def get_grid(args):
         hyperparam("--ddp-backend", "no_c10d"),
         hyperparam('--fp16', True, binary_flag=True),
         hyperparam('--last-dropout', [0.1, 0.2], save_dir_key=lambda val: f'ldrop{val}'),
-        hyperparam('--save-interval-updates', 2000),
+        # hyperparam('--last-dropout', 0.1,
+                #    save_dir_key=lambda val: f'ldrop{val}'),
+        # hyperparam('--save-interval-updates', 2000),
 
         # hyperparam('--use-shards'),
 
-        # hyperparam('--restore-file', "/checkpoint/xwhan/2019-08-22/uqa_again.span_qa.adam.lr1e-05.bert_best.crs_ent.seed3.bsz8.ldrop0.05.ngpu16/checkpoint_1_19000.pt"),
+        hyperparam('--restore-file', "/checkpoint/xwhan/2019-08-22/squad_kdn_v2_boundary.span_qa.adam.lr1e-05.kdn_v2_boundary.seed3.bsz8.ldrop0.2.ngpu2/checkpoint_3_16000.pt"),
     ]
 
 

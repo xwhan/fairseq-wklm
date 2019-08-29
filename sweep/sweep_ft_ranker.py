@@ -5,19 +5,6 @@ import sweep
 from sweep import hyperparam
 
 
-def get_lr_str(val):
-    uniq_lr = reduce(
-        lambda x, y: x + y if x[-1] != y[-1] else x,
-        map(lambda x: [x], val.split(','))
-    )
-    return ','.join(uniq_lr)
-
-
-def get_filter_str(val):
-    f = eval(val)
-    s = f'cf{f[0][1]}'
-    return s
-
 
 max_update = 100000
 
@@ -25,8 +12,6 @@ def get_grid(args):
     return [
 
         hyperparam('--save-interval', 1),
-        hyperparam('--no-epoch-checkpoints'),
-        hyperparam('--warmup-updates', int(0.1 * max_update)),
         hyperparam('--arch', 'finetuning_paragraph_ranker', save_dir_key=lambda val: val),
         hyperparam('--task', 'paragaph_ranking'),
 
@@ -44,9 +29,10 @@ def get_grid(args):
         hyperparam('--skip-invalid-size-inputs-valid-test'),
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', 1000),
-        hyperparam('--max-sentences', 8, save_dir_key=lambda val: f'bsz{val}'),
+        hyperparam('--max-sentences', 4, save_dir_key=lambda val: f'bsz{val}'),
 
         hyperparam('--model-dim', 768),
+        hyperparam("--ddp-backend", "no_c10d"),
         hyperparam('--fp16', True, binary_flag=True),
         hyperparam('--last-dropout', [0.1, 0.2], save_dir_key=lambda val: f'ldrop{val}'),
     ]

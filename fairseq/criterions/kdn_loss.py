@@ -65,7 +65,11 @@ class KDN_loss(FairseqCriterion):
             lm_targets = sample['lm_target'].view(-1)
             lm_loss = compute_cross_entropy_loss(lm_logits, lm_targets, self.padding_idx)
             ntokens = utils.strip_pad(lm_targets, self.padding_idx).numel()
-            lm_loss = lm_loss / ntokens
+
+            if ntokens == 0:
+                lm_loss = lm_loss * 0.0
+            else:
+                lm_loss = lm_loss / ntokens
 
         if self.start_end:
             ent_loss_start, lprobs = self.compute_loss(model, entity_start_logits, sample)
@@ -80,7 +84,10 @@ class KDN_loss(FairseqCriterion):
             ent_loss, lprobs = self.compute_loss(model, entity_logits, sample)
             n_entities = utils.strip_pad(sample['target'], self.ignore_index).numel()
             ent_loss = ent_loss / n_entities
-            loss = ent_loss + lm_loss if self.use_mlm else ent_loss
+            # loss = ent_loss + lm_loss if self.use_mlm else ent_loss
+
+            # import pdb;pdb.set_trace()
+            loss = lm_loss
 
         sample_size = 1
         logging_output = {

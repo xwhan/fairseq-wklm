@@ -62,7 +62,7 @@ class ParagraphRanker(BaseFairseqModel):
         args.short_seq_prob = 0.0
         task = MaskedLMTask(args, dictionary)
         models, _ = checkpoint_utils.load_model_ensemble(
-        [args.bert_path], arg_overrides={'remove_head': True}, task=task)
+            [args.bert_path], arg_overrides={'remove_head': True, 'share_encoder_input_output_embed': False}, task=task)
         assert len(models) == 1, 'ensembles are currently not supported for elmo embeddings'
 
         return ParagraphRanker(args, models[0])

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # preprocessing code for span style question answering
+"""
+take json format files and create tokenized questions and contexts
+"""
+
 
 import argparse
 import json
@@ -17,10 +21,11 @@ from fairseq.data.masked_lm_dictionary import BertDictionary
 
 q_words = [["how", "many"], ["how", "long"], ["how"], ["which"], ["what"], ["when"], ["whose"], ["who"], ["where"], ["why"]]
 
+
 def _process_samples(items, tokenizer):
 
     outputs = []
-    for item in tqdm(items):
+    for item in items:
         answer_list = [_.lower()
                         for _ in item['answer']]  # multiple answers
         context = item['para'].lower()
@@ -49,24 +54,8 @@ def _process_samples(items, tokenizer):
             for sub_token in sub_tokens:
                 tok_to_orig_index.append(i)
                 all_doc_tokens.append(sub_token)
-
-        q_toks = tokenizer.basic_tokenizer.tokenize(item['q'])
-        replaced = False
-        for q_w in q_words:
-            if replaced:
-                break
-            for idx in range(len(q_toks)):
-                if q_toks[idx:idx+len(q_w)] == q_w:
-                    q_toks[idx:idx+len(q_w)] = ["[unused1]"]
-                    replaced = True
-                    break
-        q_subtoks = []
-        for ii in q_toks:
-            q_subtoks.extend(tokenizer.wordpiece_tokenizer.tokenize(
-                ii))
-        if q_subtoks[-1] == "?":
-            q_subtoks = q_subtoks[:-1]
-        q = q_subtoks
+    
+        q = process(item['q'].lower(), tokenizer)
 
         answer_start = []
         answer_end = []
@@ -162,14 +151,10 @@ def process_files(data_folder, output_folder):
         results = [pool.apply_async(_process_samples, args=(
             data[offsets[work_id]: offsets[work_id + 1]], tokenizer)) for work_id in range(num_workers)]
         outputs = [p.get() for p in results]
-
         samples = []
         for o in outputs:
             samples.extend(o)
 
-        # samples = Parallel(n_jobs=50)(delayed(_process_sample)(
-            # item, tokenizer) for item in tqdm(data))
-        
 
         question_out = open(os.path.join(output_folder, split, 'q.txt'), 'w')
         context_out = open(os.path.join(output_folder, split, 'c.txt'), 'w')
@@ -196,7 +181,6 @@ def process_files(data_folder, output_folder):
             print(sample_id, file=sample_id_out)
 
 
-
 def binarize_list(words, d):
     return [d.index(w) for w in words]
 
@@ -208,22 +192,13 @@ def debinarize_list(indice, d):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        '--input',
-        metavar='DIR',
-        help='input split path',
-        default='/private/home/xwhan/dataset/squad1.1/splits'
-    )
-    parser.add_argument(
-        '--output',
-        metavar='DIR',
-        help='Path for output',
-        default='/private/home/xwhan/dataset/squad1.1/processed-splits-uqa'
-    )
+    parser.add_argument('--data', type=str, default='WebQ')
+
 
     args = parser.parse_args()
     utils.print_args(args)
-    process_files(args.input, args.output)
+    process_files(f'/private/home/xwhan/dataset/{args.data}/splits',
+                  f'/private/home/xwhan/dataset/{args.data}/processed-splits')
 
 
 
