@@ -96,7 +96,6 @@ def process_file(folder, output, lower=True):
             e1_type = get_special_token("SUBJ=%s" % item['subj_type'])
             e2_type = get_special_token("OBJ=%s" % item['obj_type'])
 
-
             lbl = relation2id[lbl_rel]
             print(" ".join(wp_toks), file=sent_out)
             print(lbl, file=lbl_out)

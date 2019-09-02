@@ -168,11 +168,11 @@ class KDNDataset(FairseqDataset):
         mask = np.random.choice(sent_length, mask_num, replace=False)
         target = np.copy(sentence)
 
-        # # entity token index
+        # entity token index
         entity_tok_index = []
-        # for offset, len_ in zip(entity_info[0], entity_info[1]):
-        #     for _ in range(len_):
-        #         entity_tok_index.append(offset + _)
+        for offset, len_ in zip(entity_info[0], entity_info[1]):
+            for _ in range(len_):
+                entity_tok_index.append(offset + _)
 
         for i in range(sent_length):
             if i in mask and (i not in entity_tok_index):

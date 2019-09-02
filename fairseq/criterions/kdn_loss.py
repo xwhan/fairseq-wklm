@@ -84,10 +84,7 @@ class KDN_loss(FairseqCriterion):
             ent_loss, lprobs = self.compute_loss(model, entity_logits, sample)
             n_entities = utils.strip_pad(sample['target'], self.ignore_index).numel()
             ent_loss = ent_loss / n_entities
-            # loss = ent_loss + lm_loss if self.use_mlm else ent_loss
-
-            # import pdb;pdb.set_trace()
-            loss = lm_loss
+            loss = ent_loss + lm_loss if self.use_mlm else ent_loss
 
         sample_size = 1
         logging_output = {

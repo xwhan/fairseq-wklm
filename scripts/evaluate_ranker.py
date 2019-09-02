@@ -105,9 +105,7 @@ class RankerDataset(Dataset):
         samples= []
         for o in outputs:
             samples.extend(o)
-        
         print(f'Load {len(samples)} paragraphs in total')
-
         return samples
 
 def collate(samples):
@@ -131,7 +129,7 @@ def collate(samples):
     }
 
 
-def hits(qid2results, k=[1,5,10,20]):
+def hits(qid2results, k=[5,10,20,50,100]):
     for k_ in k:
         hitsk = []
         for qid in qid2results.keys():
@@ -156,8 +154,7 @@ def main(args):
     model = nn.DataParallel(model)
 
     eval_dataset = RankerDataset(task, args.eval_data)
-    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz,
-                            collate_fn=collate, num_workers=20, pin_memory=True)
+    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=10)
 
     qid_score_label = []
     qid_paraid_scores = defaultdict(list)
@@ -168,13 +165,13 @@ def main(args):
             out = model(**batch_cuda['net_input'])
             logits = F.softmax(out, dim=-1)
             scores = logits[:,1].tolist()
+
             labels = batch_data['target'].view(-1).tolist()
             orig_scores = batch_data['orig_score']
             for qid, para_id, score in zip(batch_data['id'], batch_data['para_id'], scores):
                 qid_paraid_scores[qid].append((para_id, score))
-
+            
             qid_score_label += list(zip(batch_data['id'], scores, labels, orig_scores))
-
 
     qid2results = defaultdict(list)
     qid2orig_results = defaultdict(list)
@@ -213,9 +210,13 @@ def main(args):
         samples = []
         for o in outputs:
             samples.extend(o)
-        for s in samples:
+
+        for s in tqdm(samples):
+            qid = s['qid']
+            for para_id in topk_paras[qid]:
+                s['score'] = topk_paras[qid][para_id]
             f.write(json.dumps(s) + '\n')
-        print(f'Wrote {len(samples)} paragraphs in total')
+        print(f'Wrote {len(eval_dataset.raw_data)} paragraphs in total')
 
 
 def _process_qa_samples(samples, tokenizer, topk_paras):
@@ -242,8 +243,8 @@ if __name__ == '__main__':
                         default='/checkpoint/xwhan/2019-08-18/WebQ_ranking_baseline.finetuning_paragraph_ranker.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt')
     parser.add_argument('--topk', default=20, type=int, help="how many paragraphs selected for open-domain QA")
     parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/triviaqa/raw/valid.json', type=str)
-    parser.add_argument('--save-path', default='/private/home/xwhan/dataset/triviaqa/raw/valid_with_scores_best.json', type=str)
-    parser.add_argument('--eval-bsz', default=128, type=int)
+    parser.add_argument('--save-path', default='/private/home/xwhan/dataset/triviaqa/raw/valid_with_scores.json', type=str)
+    parser.add_argument('--eval-bsz', default=256, type=int)
 
     args = options.parse_args_and_arch(parser)
     # args = parser.parse_args()

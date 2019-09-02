@@ -60,7 +60,7 @@ class KDN(BaseFairseqModel):
             self.kdn_outputs.bias.data.zero_()
 
 
-    def forward(self, sentence, segment, entity_masks=None, only_states=False):
+    def forward(self, sentence, segment, entity_masks=None, only_states=False, cls_rep=False):
         """
         entity_masks: B, |E|, L
         outputs: B, |E|, 2
@@ -82,6 +82,8 @@ class KDN(BaseFairseqModel):
                 return x
             else:
                 return torch.cat([x, outputs['task_specific']], dim=-1)
+        elif cls_rep:
+            return outputs['pooled_output']
 
         # # initial outputs, concatenate cls with average pool
         # cls_rep = x[:,0,:]

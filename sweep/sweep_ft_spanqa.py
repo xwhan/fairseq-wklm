@@ -42,14 +42,23 @@ def get_grid(args):
 
 
 
-        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-                   save_dir_key=lambda val: f'kdn_v2_boundary'),
-        hyperparam("--use-kdn"),
-        hyperparam('--boundary-loss'),
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_v2_boundary'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
 
 
         # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',save_dir_key=lambda val: f'bert_best'),
 
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_mlm_only.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt', save_dir_key=lambda val: f'bert_mlm_retrain'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
+
+        # masking ratio 0.05
+        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+                   save_dir_key=lambda val: f'kdn_v2_mask0.05'),
+        hyperparam("--use-kdn"),
+        hyperparam('--boundary-loss'),
 
         hyperparam('--sentence-avg', True, binary_flag=True),
         hyperparam('--criterion', 'span_qa'),
@@ -68,7 +77,7 @@ def get_grid(args):
 
         # hyperparam('--use-shards'),
 
-        hyperparam('--restore-file', "/checkpoint/xwhan/2019-08-22/squad_kdn_v2_boundary.span_qa.adam.lr1e-05.kdn_v2_boundary.seed3.bsz8.ldrop0.2.ngpu2/checkpoint_3_16000.pt"),
+        # hyperparam('--restore-file', "/checkpoint/xwhan/2019-08-22/squad_kdn_v2_boundary.span_qa.adam.lr1e-05.kdn_v2_boundary.seed3.bsz8.ldrop0.2.ngpu2/checkpoint_3_16000.pt"),
     ]
 
 

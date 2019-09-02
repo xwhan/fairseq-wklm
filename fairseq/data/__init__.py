@@ -42,6 +42,7 @@ from .spanqa_dataset import SpanQADataset
 from .kdn_dataset import KDNDataset
 from .re_dataset import REDataset
 from .spanqa_bce_dataset import SpanQABCEDataset
+from .typing_dataset import TypingDataset
 
 from .iterators import (
     CountingIterator,
@@ -96,4 +97,5 @@ __all__ = [
     'KDNDataset',
     'REDataset',
     'SpanQABCEDataset',
+    'TypingDataset',
 ]

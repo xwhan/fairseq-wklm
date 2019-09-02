@@ -54,7 +54,7 @@ def get_grid(args):
         # hyperparam('--save-interval-updates', 50000),
 
         hyperparam('--boundary-loss'),
-        hyperparam('--masking-ratio', 0.15),
+        hyperparam('--masking-ratio', 0.05),
     ]
 
 

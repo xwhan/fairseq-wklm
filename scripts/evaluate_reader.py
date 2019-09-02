@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 import hashlib
 import json
 import sys
@@ -19,7 +20,6 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 
 import collections
-
 from fairseq.tokenization import BasicTokenizer
 
 from official_eval import f1_score, exact_match_score, metric_max_over_ground_truths
@@ -126,20 +126,53 @@ def build_map(context, tokenizer):
 
     return orig_to_tok_index, tok_to_orig_index, doc_tokens, all_doc_tokens
 
+
+def process_raw_items(items, tokenizer):
+    samples = []
+    for item in items:
+        sample = {}
+        question_toks = item['q_toks']
+        orig_to_tok_index, tok_to_orig_index, doc_tokens, wp_tokens = build_map(item['para'], tokenizer)
+        sample['tok_to_orig_index'] = tok_to_orig_index
+        sample['para_subtoks'] = wp_tokens
+        sample['para_toks'] = doc_tokens
+        sample['q_subtoks'] = question_toks
+        sample['qid'] = item['qid']
+        sample['score'] = item.get('score', 0)
+        sample['para_id'] = item['para_id']
+        sample['q'] = item['q']
+        sample['para'] = item['para']
+        samples.append(sample)
+    return samples
+
+
 def process_raw(data_path, tokenizer, out_path):
-    raw_data = [json.loads(item) for item in open(data_path).readlines()]   
-    for item in tqdm(raw_data):
-        q = item['q']
-        para = item['para']
-        question_toks = tokenizer.tokenize(q)
-        orig_to_tok_index, tok_to_orig_index, doc_tokens, wp_tokens = build_map(para, tokenizer)
-        item['tok_to_orig_index'] = tok_to_orig_index
-        item['para_subtoks'] = wp_tokens
-        item['para_toks'] = doc_tokens
-        item['q_subtoks'] = question_toks
+    raw_data = [json.loads(item) for item in open(data_path).readlines()]  
+
+    num_workers = 30
+    chunk_size = len(raw_data) // num_workers
+    offsets = [
+        _ * chunk_size for _ in range(0, num_workers)] + [len(raw_data)]
+    pool = Pool(processes=num_workers)
+    print(f'Start multi-processing with {num_workers} workers....')
+    results = [pool.apply_async(process_raw_items, args=(
+        raw_data[offsets[work_id]: offsets[work_id + 1]], tokenizer)) for work_id in range(num_workers)]
+    outputs = [p.get() for p in results]
+    samples = []
+    for o in outputs:
+        samples.extend(o)
+    # for item in tqdm(raw_data):
+    #     q = item['q']
+    #     para = item['para']
+    #     question_toks = tokenizer.tokenize(q)
+    #     orig_to_tok_index, tok_to_orig_index, doc_tokens, wp_tokens = build_map(para, tokenizer)
+    #     item['tok_to_orig_index'] = tok_to_orig_index
+    #     item['para_subtoks'] = wp_tokens
+    #     item['para_toks'] = doc_tokens
+    #     item['q_subtoks'] = question_toks
 
     with open(out_path, 'w') as g:
-        for _ in raw_data:
+        for _ in samples:
             g.write(json.dumps(_) + '\n')
 
 
@@ -215,6 +248,7 @@ class ReaderDataset(Dataset):
         return len(self.raw_data)
 
     def load_dataset(self):
+        print('Loading eval data...')
         raw_data = [json.loads(item.strip()) for item in open(self.data_path).readlines()]
         samples = []
         for item in raw_data:
@@ -259,7 +293,8 @@ def main(args):
     # process_raw("/private/home/xwhan/dataset/squad1.1/splits/valid.json", task.tokenizer, "/private/home/xwhan/dataset/squad1.1/splits/valid_eval.json")
     # assert False
 
-    # process_raw("/private/home/xwhan/dataset/webq_ranking/webq_test_with_scores.json", task.tokenizer, "/private/home/xwhan/dataset/webq_ranking/webq_test_eval.json")
+    # process_raw("/private/home/xwhan/dataset/triviaqa/raw/valid_with_scores_best.json", task.tokenizer,
+    #             "/private/home/xwhan/dataset/triviaqa/raw/valid_eval.json")
     # assert False
 
     model = _load_models(args, task)
@@ -269,7 +304,7 @@ def main(args):
     model = nn.DataParallel(model)
 
     eval_dataset = ReaderDataset(task, args.eval_data, args.max_query_length, args.max_length, args.downsample)
-    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=50)
+    dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=20)
 
     qid2results = defaultdict(list)
     qid2question = {}
@@ -279,6 +314,7 @@ def main(args):
 
     basic_tokenizer = BasicTokenizer(do_lower_case=True)
 
+    print('Starting evaluation...')
     with torch.no_grad():
         for batch_ndx, batch_data in enumerate(tqdm(dataloader)):
             batch_cuda = move_to_cuda(batch_data)
@@ -328,8 +364,6 @@ def main(args):
 
                 start_preds.append(start)
                 end_preds.append(end)
-
-
 
     # evaluation
     qid2pred = {}
@@ -407,14 +441,14 @@ if __name__ == '__main__':
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
 
     parser.add_argument(
-        '--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/valid_with_scores_best.json', type=str)
+        '--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/valid_eval.json', type=str)
     parser.add_argument(
         '--answer-path', default='/private/home/xwhan/dataset/WebQ/raw/valid.json')
     parser.add_argument('--downsample', default=1.0, help='test on small portion of the data')
 
     # save the prediction file
     parser.add_argument('--save-name', default='analysis.json')
-    parser.add_argument('--eval-bsz', default=128, type=int)
+    parser.add_argument('--eval-bsz', default=256, type=int)
     parser.add_argument('--save', action='store_true')
 
     args = options.parse_args_and_arch(parser)
