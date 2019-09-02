@@ -78,13 +78,14 @@ class KDN_loss(FairseqCriterion):
             ent_loss_start = ent_loss_start / n_entities
             ent_loss_end = ent_loss_end / n_entities
             loss = ent_loss_start + ent_loss_end + lm_loss if self.use_mlm else ent_loss_start + ent_loss_end
-            
         else:
             # for both entity boundary loss and regular
             ent_loss, lprobs = self.compute_loss(model, entity_logits, sample)
             n_entities = utils.strip_pad(sample['target'], self.ignore_index).numel()
             ent_loss = ent_loss / n_entities
-            loss = ent_loss + lm_loss if self.use_mlm else ent_loss
+            # loss = ent_loss + lm_loss if self.use_mlm else ent_loss
+            
+            loss = lm_loss
 
         sample_size = 1
         logging_output = {

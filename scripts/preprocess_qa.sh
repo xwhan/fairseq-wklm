@@ -8,8 +8,8 @@ DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
 # TASK_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/processed-splits"
 # OUT_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/binarized"
 
-TASK_DATA_FOLDER="/private/home/xwhan/dataset/triviaqa/processed-splits"
-OUT_DATA_FOLDER="/private/home/xwhan/dataset/triviaqa/binarized"
+TASK_DATA_FOLDER="/private/home/xwhan/DrQA/data/datasets/data/datasets/quasart/processed-splits"
+OUT_DATA_FOLDER="/private/home/xwhan/DrQA/data/datasets/data/datasets/quasart/binarized"
 
 # TASK_DATA_FOLDER="/checkpoint/xwhan/uqa/processed-splits"
 # OUT_DATA_FOLDER="/checkpoint/xwhan/uqa/binarized"

@@ -24,7 +24,7 @@ def get_grid(args):
         hyperparam('--no-epoch-checkpoints'),
         hyperparam('--arch', 'kdn'),
         hyperparam('--task', 'kdn'),
-        hyperparam("--max-update", 2000000),
+        hyperparam("--max-update", 1000000),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
         hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',
             save_dir_key=lambda val: f'bert'),
@@ -51,10 +51,10 @@ def get_grid(args):
         # hyperparam('--start-end'), 
 
         # hyperparam('--restore-file', "/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt"),
-        # hyperparam('--save-interval-updates', 50000),
+        hyperparam('--save-interval-updates', 100000),
 
         hyperparam('--boundary-loss'),
-        hyperparam('--masking-ratio', 0.05),
+        hyperparam('--masking-ratio', 0.15),
     ]
 
 

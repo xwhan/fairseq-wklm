@@ -185,7 +185,7 @@ def main(args):
 
     print(f'DrQA ranking results:')
     hits(qid2orig_results)
-
+    
     topk_paras = defaultdict(dict)
     for k, v in qid_paraid_scores.items():
         v = sorted(v, key=lambda x:x[1], reverse=True)
@@ -212,9 +212,6 @@ def main(args):
             samples.extend(o)
 
         for s in tqdm(samples):
-            qid = s['qid']
-            for para_id in topk_paras[qid]:
-                s['score'] = topk_paras[qid][para_id]
             f.write(json.dumps(s) + '\n')
         print(f'Wrote {len(eval_dataset.raw_data)} paragraphs in total')
 

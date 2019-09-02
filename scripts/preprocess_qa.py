@@ -19,13 +19,11 @@ from fairseq.tokenization import BertTokenizer, whitespace_tokenize
 from fairseq import utils
 from fairseq.data.masked_lm_dictionary import BertDictionary
 
-q_words = [["how", "many"], ["how", "long"], ["how"], ["which"], ["what"], ["when"], ["whose"], ["who"], ["where"], ["why"]]
-
 
 def _process_samples(items, tokenizer):
 
     outputs = []
-    for item in items:
+    for item in tqdm(items):
         answer_list = [_.lower()
                         for _ in item['answer']]  # multiple answers
         context = item['para'].lower()
@@ -197,8 +195,7 @@ def main():
 
     args = parser.parse_args()
     utils.print_args(args)
-    process_files(f'/private/home/xwhan/dataset/{args.data}/splits',
-                  f'/private/home/xwhan/dataset/{args.data}/processed-splits')
+    process_files(f'/private/home/xwhan/DrQA/data/datasets/data/datasets/{args.data}/splits', f'/private/home/xwhan/DrQA/data/datasets/data/datasets/{args.data}/processed-splits')
 
 
 
