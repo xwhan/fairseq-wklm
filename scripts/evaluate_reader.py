@@ -192,8 +192,6 @@ class ReaderDataset(Dataset):
         self.max_query_length = max_query_lengths
         self.max_length = max_length
 
-        self.q_words = [["how", "many"], ["how", "long"], ["how"], ["which"], ["what"], ["when"], ["whose"], ["who"], ["where"], ["why"]]
-
     def __getitem__(self, index):
         raw_sample = self.raw_data[index]
         qid = raw_sample['qid']
@@ -307,10 +305,8 @@ def main(args):
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=20)
 
     qid2results = defaultdict(list)
-    qid2question = {}
+    qid2question = {} # for SQuAD analysis
 
-    start_preds = []
-    end_preds = []
 
     basic_tokenizer = BasicTokenizer(do_lower_case=True)
 
@@ -345,8 +341,14 @@ def main(args):
             end_position_ = list(np.array(end_position) - np.array(para_offset))
             
             for qid, doc_tokens, wp_tokens, tok_to_orig_index, start, end, ans_score, r_score, q, c, offset in zip(batch_data['id'], batch_data['doc_tokens'], batch_data['wp_tokens'], batch_data['tok_to_orig_index'], start_position_, end_position_, answer_scores, ranking_scores, batch_data['q'], batch_data['c'], para_offset):
-
                 tok_tokens = wp_tokens[start:end+1]
+
+                # in case of empty paragraph
+                if len(tok_to_orig_index) == 0:
+                    qid2results[qid].append(("", ans_score, r_score))
+                    qid2question[qid] = {'q': q, 'c': c}
+                    continue
+
                 orig_doc_start = tok_to_orig_index[start]
                 orig_doc_end = tok_to_orig_index[end]
                 orig_tokens = doc_tokens[orig_doc_start:(orig_doc_end + 1)]
@@ -361,9 +363,6 @@ def main(args):
 
                 qid2results[qid].append((final_text, ans_score, r_score))
                 qid2question[qid] = {'q': q, 'c': c}
-
-                start_preds.append(start)
-                end_preds.append(end)
 
     # evaluation
     qid2pred = {}
@@ -381,9 +380,11 @@ def main(args):
                 line['qid'] = hash_q_id(line['question'])
             qid2ground[line['qid']] = line['answer']
             analysis[line['qid']] = {"gold": line['answer'], "pred": qid2results[line['qid']][0], 'q': qid2question[line['qid']]['q'], 'c': qid2question[line['qid']]['c']}
+
+    print(f'how many evaluation data: {len(qid2ground)}')
     
     # save the predictions for tuninng
-    for alpha in np.arange(0, 1.05, 0.05):
+    for alpha in list(np.arange(0, 0.200, 0.005)) + [1]:
         qid2pred = {}
         for qid in qid2results.keys():
             qid2results[qid].sort(key=lambda x: combine(x[1], x[2], alpha), reverse=True)
@@ -401,7 +402,6 @@ def main(args):
         with open(save_path, 'w') as g:
             json.dump(analysis, g)
 
-
     f1_scores = [metric_max_over_ground_truths(f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
 
     em_scores = [metric_max_over_ground_truths(exact_match_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
@@ -410,8 +410,11 @@ def main(args):
     print(f'em score {np.mean(em_scores)}')
 
 def combine(s1, s2, alpha=0.1):
+    """
+    s1: answer score
+    s2: retrieval score
+    """
     return s1 * alpha + s2 * (1 - alpha)
-    # return s1 # use answer score
 
 def metrics(args):
     prediction = json.load(open('/private/home/xwhan/dataset/webq_qa/prediction.json'))
@@ -441,7 +444,7 @@ if __name__ == '__main__':
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
 
     parser.add_argument(
-        '--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/valid_eval.json', type=str)
+        '--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/valid_with_scores.json', type=str)
     parser.add_argument(
         '--answer-path', default='/private/home/xwhan/dataset/WebQ/raw/valid.json')
     parser.add_argument('--downsample', default=1.0, help='test on small portion of the data')

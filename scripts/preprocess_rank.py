@@ -58,22 +58,13 @@ def process_files(data_folder, output_folder):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--input',
-        metavar='DIR',
-        help='input split path',
-        default='/private/home/xwhan/dataset/triviaqa-ranking/splits'
-    )
-    parser.add_argument(
-        '--output',
-        metavar='DIR',
-        help='Path for output',
-        default='/private/home/xwhan/dataset/triviaqa-ranking/processed-splits'
-    )
+
+    parser.add_argument('--data', type=str, default='WebQ')
 
     args = parser.parse_args()
     utils.print_args(args)
-    process_files(args.input, args.output)
+    process_files(f'/private/home/xwhan/DrQA/data/datasets/data/datasets/{args.data}_ranking/splits',
+                  f'/private/home/xwhan/DrQA/data/datasets/data/datasets/{args.data}_ranking/processed-splits')
 
 
 if __name__ == '__main__':

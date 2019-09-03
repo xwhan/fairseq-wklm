@@ -2,9 +2,9 @@ DICTIONARY_LOCATION="/private/home/xwhan/fairseq-py/vocab_dicts/dict.txt"
 
 SPLITS="train valid"
 
-DATASET="triviaqa-ranking"
-TASK_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/processed-splits"
-OUT_DATA_FOLDER="/private/home/xwhan/dataset/$DATASET/binarized"
+DATASET="searchqa_ranking"
+TASK_DATA_FOLDER="/private/home/xwhan/DrQA/data/datasets/data/datasets/$DATASET/processed-splits"
+OUT_DATA_FOLDER="/private/home/xwhan/DrQA/data/datasets/data/datasets/$DATASET/binarized"
 
 VAR="q c"
 

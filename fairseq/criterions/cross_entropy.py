@@ -31,7 +31,8 @@ class CrossEntropyCriterion(FairseqCriterion):
         """
 
         if sample['net_input']['sentence'].size(1) > self.max_length:
-            assert False
+            print('max-length warnings')
+            print(sample['net_input']['sentence'].size(1))
 
         net_output = model(**sample['net_input'])
         loss, lprobs = self.compute_loss(model, net_output, sample)

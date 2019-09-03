@@ -10,7 +10,7 @@ def get_grid(args):
         hyperparam('--arch', 'span_qa', save_dir_key=lambda val: val),
         hyperparam('--task', 'span_qa'),
 
-        hyperparam("--max-epoch", 20),
+        hyperparam("--max-epoch", 10),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
         hyperparam('--lr', [1e-5, 5e-6], save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--lr', 1e-5,
@@ -64,9 +64,12 @@ def get_grid(args):
         hyperparam('--criterion', 'span_qa'),
         hyperparam('--seed', 3, save_dir_key=lambda val: f'seed{val}'),
         hyperparam('--skip-invalid-size-inputs-valid-test'),
+        # hyperparam('--max-sentences', 8,
+                #    save_dir_key=lambda val: f'bsz{val}'),
+
         hyperparam('--max-sentences', 32, save_dir_key=lambda val: f'bsz{val}'),
         hyperparam('--max-length', 128,
-                   save_dir_key=lambda val: f'bsz{val}'),
+                   save_dir_key=lambda val: f'mlen{val}'),
 
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', 1000),

@@ -161,7 +161,6 @@ class F1Meter(object):
             (attach_prefix('p'), self.precision),
             (attach_prefix('r'), self.recall),
             (attach_prefix('f1'), self.f1),
-            
         ]
 
 

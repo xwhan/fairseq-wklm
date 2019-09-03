@@ -146,6 +146,8 @@ class ParagraphRankingTask(FairseqTask):
 
         shuffle = True if split == 'train' else False
 
+        print(self.max_length)
+
         self.datasets[split] = ParagraphRankingDataset(
             dataset_q, dataset_c, loaded_labels, sizes_q + sizes_c, self.dictionary, True if split == 'train' else False, self.max_length
             )

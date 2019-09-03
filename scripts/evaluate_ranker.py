@@ -52,11 +52,11 @@ def _process_samples(items, tokenizer):
 
 class RankerDataset(Dataset):
     """docstring for RankerDataset"""
-    def __init__(self, task, data_path):
+    def __init__(self, task, data_path, tokenized=False):
         super().__init__()
         self.task = task
         self.data_path = data_path
-        self.raw_data = self.load_dataset()
+        self.raw_data = self.load_dataset() if not tokenized else self.load_tokenized()
         self.vocab = task.dictionary
 
     def __getitem__(self, index):
@@ -108,6 +108,26 @@ class RankerDataset(Dataset):
         print(f'Load {len(samples)} paragraphs in total')
         return samples
 
+    def load_tokenized(self):
+        """
+        load tokenized data
+        """
+        data = [json.loads(item.strip()) for item in open(self.data_path).readlines()]
+        samples = []        
+        for item in data:
+            s = {}
+            s['q_toks'] = item['q_subtoks']
+            s['qid'] = item['qid']
+            s['para_toks'] = item['para_subtoks']
+            s['orig_score'] = item['score']
+            s['label'] = item['para_has_answer']
+            s['q'] = item['q']
+            s['para'] = item['para']
+            s['para_id'] = item['para_id']
+            s['answer'] = item['answer']
+            samples.append(s)
+        return samples
+
 def collate(samples):
     if len(samples) == 0:
         return {}
@@ -153,7 +173,7 @@ def main(args):
 
     model = nn.DataParallel(model)
 
-    eval_dataset = RankerDataset(task, args.eval_data)
+    eval_dataset = RankerDataset(task, args.eval_data, args.tokenized)
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=10)
 
     qid_score_label = []
@@ -236,11 +256,11 @@ def _process_qa_samples(samples, tokenizer, topk_paras):
 if __name__ == '__main__':
     parser = options.get_training_parser('span_qa')
     # parser.add_argument('--criterion', default='cross_entropy')
-    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated',
-                        default='/checkpoint/xwhan/2019-08-18/WebQ_ranking_baseline.finetuning_paragraph_ranker.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt')
+    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-18/WebQ_ranking_baseline.finetuning_paragraph_ranker.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt')
     parser.add_argument('--topk', default=20, type=int, help="how many paragraphs selected for open-domain QA")
     parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/triviaqa/raw/valid.json', type=str)
     parser.add_argument('--save-path', default='/private/home/xwhan/dataset/triviaqa/raw/valid_with_scores.json', type=str)
+    parser.add_argument('--tokenized', action="store_true")
     parser.add_argument('--eval-bsz', default=256, type=int)
 
     args = options.parse_args_and_arch(parser)

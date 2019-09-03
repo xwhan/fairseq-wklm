@@ -214,7 +214,6 @@ class TypingTask(FairseqTask):
                         true_labels.append(type_idx)
 
                 strict_acc += set(predicted_labels) == set(true_labels)
-
                 n_pred += len(predicted_labels)
                 n_true += len(true_labels)
                 n_corr += len(set(predicted_labels).intersection(set(true_labels)))

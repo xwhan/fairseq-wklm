@@ -170,9 +170,9 @@ class KDNDataset(FairseqDataset):
 
         # entity token index
         entity_tok_index = []
-        # for offset, len_ in zip(entity_info[0], entity_info[1]):
-        #     for _ in range(len_):
-        #         entity_tok_index.append(offset + _)
+        for offset, len_ in zip(entity_info[0], entity_info[1]):
+            for _ in range(len_):
+                entity_tok_index.append(offset + _)
 
         for i in range(sent_length):
             if i in mask and (i not in entity_tok_index):
