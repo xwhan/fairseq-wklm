@@ -43,7 +43,7 @@ def get_grid(args):
         hyperparam('--log-interval', 50000),
         hyperparam('--model-dim', 768),
         hyperparam('--fp16', True, binary_flag=True),
-        hyperparam('--use-mlm'),
+        # hyperparam('--use-mlm'),
         hyperparam('--ddp-backend', "no_c10d"),
 
         # hyperparam('--add-layer'),

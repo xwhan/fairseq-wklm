@@ -110,6 +110,7 @@ class TypingTask(FairseqTask):
         tokenized_data_path = os.path.join(
                 self.args.data, "processed-splits")
 
+
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else '')
 

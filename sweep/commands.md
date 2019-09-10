@@ -26,6 +26,8 @@ python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/WebQ -p WebQ_mlm_
 
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/WebQ -p WebQ_kdn_m0.05 -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/WebQ -p WebQ_ablation_1m -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/triviaqa -p triviaqa_kdn_filtered_b16 -t -1 -g 2 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/WebQ -p WebQ_kdn -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
@@ -35,10 +37,14 @@ python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/WebQ -p WebQ_kdn_
 
 
 ## sweep for SQuAD 1.1 
-python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/squad1.1 -p squad_mlm_ablation_1m -t -1 -g 2 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/squad1.1 -p squad_ablation_1m -t -1 -g 2 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/squad1.1 -p squad_ablation_1m -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
 
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/squad1.1 -p squad_mask0.05 -t -1 -g 2 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/dataset/squad1.1 -p squad_mask0.05 -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
 python sweep/sweep_ft_spanqa.py -d /checkpoint/xwhan/uqa -p uqa_bce_squad_valid -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
@@ -49,8 +55,10 @@ python scripts/evaluate_reader.py /private/home/xwhan/dataset/WebQ --use-kdn --m
 ```
 * use bert model
 ```
-python scripts/evaluate_reader.py /private/home/xwhan/dataset/WebQ --model-path /checkpoint/xwhan/2019-08-25/WebQ_baseline.span_qa.adam.lr5e-06.bert_best.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt --arch span_qa 
+python scripts/evaluate_reader.py /private/home/xwhan/dataset/WebQ --model-path /checkpoint/xwhan/2019-09-02/WebQ_kdn_m0.05.span_qa.adam.lr5e-06.kdn_v2_mask0.05.seed3.bsz8.ldrop0.1.ngpu1/checkpoint_best.pt --arch span_qa 
 ```
+
+python scripts/evaluate_reader.py /private/home/xwhan/dataset/WebQ --use-kdn --model-path /checkpoint/xwhan/2019-09-10/WebQ_ablation_1m.span_qa.adam.lr5e-06.bert_mlm_ablation.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt -a span_qa
 
 python scripts/evaluate_reader.py /private/home/xwhan/dataset/WebQ --model-path /checkpoint/xwhan/2019-08-26/WebQ_kdn_v2.span_qa.adam.lr5e-06.kdn_v2_boundary.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt --arch span_qa
 
@@ -61,6 +69,8 @@ python scripts/evaluate_reader.py /private/home/xwhan/dataset/WebQ --model-path 
 ```
 python scripts/evaluate_reader.py /private/home/xwhan/dataset/squad1.1 --model-path /checkpoint/xwhan/2019-08-22/squad_kdn_v2_boundary.span_qa.adam.lr1e-05.kdn_v2_boundary.seed3.bsz8.ldrop0.2.ngpu2/checkpoint_3_16000.pt --arch span_qa --eval-data /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json --answer-path /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json
 
+
+python scripts/evaluate_reader.py /private/home/xwhan/dataset/squad1.1 --model-path /checkpoint/xwhan/2019-09-09/squad_mask0.05.span_qa.adam.lr5e-06.kdn_v2_mask0.05.seed3.bsz8.ldrop0.1.ngpu1/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json --answer-path /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json
 
 python scripts/evaluate_reader.py /private/home/xwhan/dataset/squad1.1 --model-path /checkpoint/xwhan/2019-08-23/squad_kdn_v2_boundary_b8.span_qa.adam.lr5e-06.kdn_v2_boundary.seed3.bsz8.ldrop0.2.ngpu1/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json --answer-path /private/home/xwhan/dataset/squad1.1/splits/valid_eval.json
 
@@ -136,14 +146,13 @@ ssh -J prn-fairjmp02 -L 8889:localhost:8889 100.97.67.36
 
 
 
-
 ## Typing 
 
-python train.py --fp16  /private/home/xwhan/dataset/FIGER --task typing --arch typing --criterion typing_loss --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 1 --max-sentences 32 --optimizer adam --use-sep --save-interval-updates 10 --final-metric acc --ddp-backend no_c10d --save-interval 1 --max-update 1000000 --lr 1e-5
+python train.py --fp16  /private/home/xwhan/dataset/FIGER --task typing --arch typing --criterion typing_loss --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --distributed-world-size 8 --max-sentences 128 --optimizer adam --use-sep --save-interval-updates 10 --ddp-backend no_c10d --save-interval 1 --max-update 1000000 --lr 1e-5 --max-length 64
 
-python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/FIGER -p typing_bert_base -t -1 -g 8 -n 1 --tensorboard-logdir /checkpoint/xwhan/typing
+python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/FIGER -p typing_base_marker -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing
 
-python scripts/evaluate_typing.py --arch typing /private/home/xwhan/dataset/FIGER --model-path /checkpoint/xwhan/2019-08-31/typing_bert_base.typing.adam.lr5e-05.bert.seed3.bsz32.maxlen256.drop0.1.ngpu8/checkpoint_best.pt --use-sep
+python scripts/evaluate_typing.py --arch typing /private/home/xwhan/dataset/FIGER --model-path /checkpoint/xwhan/2019-09-07/typing_kdn_marker.typing.adam.lr1e-05.kdn_v2_mask0.05.seed3.bsz16.maxlen256.drop0.1.ngpu16/checkpoint_best.pt --use-marker --eval-data /private/home/xwhan/dataset/FIGER/processed-splits/test --thresh 0.5
 
 
 ## OpenQA Experiments
@@ -153,9 +162,14 @@ python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/d
 
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa -p searchqa_mask0.05 -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa -p searchqa_ablation_1m -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa -p unftriviaqa_base -t -1 -g 4 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
 python sweep/sweep_ft_ranker.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa_ranking -p searchqa_ranking_base -t -1 -g 8 -n 1 --tensorboard-logdir /checkpoint/xwhan/ranking 
+
+python sweep/sweep_ft_ranker.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa_ranking -p unftriviaqa_ranking_base -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/ranking 
+
 
 
 python train.py --fp16  /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa_ranking --task paragaph_ranking --arch finetuning_paragraph_ranker --save-interval 1 --max-update 30000 --lr 2e-05 --bert-path /checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt --num-label 2 --distributed-world-size 8 --max-sentences 32 --optimizer adam --ddp-backend no_c10d --max-length 128
@@ -164,6 +178,10 @@ python train.py --fp16  /private/home/xwhan/DrQA/data/datasets/data/datasets/sea
 ### Ranking eval
 python scripts/evaluate_ranker.py /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa_ranking --model-path /checkpoint/xwhan/2019-09-02/searchqa_ranking_base.finetuning_paragraph_ranker.adam.lr5e-06.bert.crs_ent.seed3.bsz32.bsz128.ldrop0.1.ngpu8/checkpoint_last.pt -a finetuning_paragraph_ranker --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa/valid_eval.json --save-path /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa/valid_eval_with_scores.json --tokenized
 
+
+python scripts/evaluate_ranker.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa_ranking --model-path /checkpoint/xwhan/2019-09-03/unftriviaqa_ranking_base.finetuning_paragraph_ranker.adam.lr2e-05.bert.crs_ent.seed3.bsz32.bsz128.ldrop0.1.ngpu16/checkpoint_last.pt -a finetuning_paragraph_ranker --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval.json --save-path /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json --tokenized
+
+
 ### Reader eval
 python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa --model-path /checkpoint/xwhan/2019-09-03/searchqa_mask0.05.span_qa.adam.lr5e-06.kdn_v2_mask0.05.seed3.bsz32.bsz128.ldrop0.2.ngpu1/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa/test_eval_with_scores.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/searchqa/test_eval_with_scores.json
 
@@ -171,4 +189,10 @@ python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/da
 
 
 
+python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-03/unftriviaqa_base.span_qa.adam.lr5e-06.bert_best.seed3.bsz32.mlen128.ldrop0.1.ngpu4/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval.json
 
+
+
+python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-03/unftriviaqa_mask0.05.span_qa.adam.lr5e-06.kdn_v2_mask0.05.seed3.bsz32.bsz128.ldrop0.1.ngpu4/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/test_eval.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/test_eval.json
+
+python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-03/unftriviaqa_mask0.05.span_qa.adam.lr5e-06.kdn_v2_mask0.05.seed3.bsz32.bsz128.ldrop0.1.ngpu4/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json

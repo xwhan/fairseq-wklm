@@ -24,9 +24,9 @@ def get_grid(args):
         hyperparam('--save-interval', 1),
         hyperparam('--arch', 'typing', save_dir_key=lambda val: val),
         hyperparam('--task', 'typing'),
-        hyperparam("--max-epoch", 5),
+        hyperparam("--max-epoch", 3),
         hyperparam('--optimizer', 'adam', save_dir_key=lambda val: val),
-        hyperparam('--lr', [2e-5, 1e-5, 5e-6, 3e-5, 5e-5],
+        hyperparam('--lr', [1e-5, 2e-5, 3e-5, 5e-5],
                    save_dir_key=lambda val: f'lr{val}'),
         # hyperparam('--lr-scheduler', "reduce_lr_on_plateau"),
         # hyperparam('--lr-shrink', 0.5),
@@ -45,27 +45,34 @@ def get_grid(args):
 
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_last.pt', save_dir_key=lambda val: f'kdn_last'),
 
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_v2_mask0.05'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
+
         hyperparam('--sentence-avg', True, binary_flag=True),
-        hyperparam('--save-interval-updates', 5000),
+        # hyperparam('--save-interval-updates', 2000),
         hyperparam('--criterion', "typing_loss"),
         hyperparam('--seed', 3, save_dir_key=lambda val: f'seed{val}'),
-        hyperparam('--max-sentences', 32,
+        hyperparam('--max-sentences', [16, 32, 64],
                    save_dir_key=lambda val: f'bsz{val}'),
+        hyperparam('--max-length', 256,
+                   save_dir_key=lambda val: f'maxlen{val}'),
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', 1000),
         hyperparam('--model-dim', 768),
         hyperparam("--ddp-backend", "no_c10d"),
-        hyperparam("--final-metric", "acc"),
+        # hyperparam("--final-metric", "acc"),
 
         # # use huggingface bert large
         # hyperparam("--use-hf"),
         # hyperparam("--use-cased"),
 
-        hyperparam("--use-sep"),
+        hyperparam("--use-marker"),
+
+        # hyperparam("--use-sep"),
         hyperparam('--fp16', True, binary_flag=True),
-        hyperparam("--max-length", 256,
-                   save_dir_key=lambda val: f'maxlen{val}'),
-        hyperparam("--last-drop", [0.1, 0.05, 0.2], save_dir_key=lambda val: f'drop{val}')
+        hyperparam("--last-drop", 0.1, save_dir_key=lambda val: f'drop{val}')
     ]
 
 

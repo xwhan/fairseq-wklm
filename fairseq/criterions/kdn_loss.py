@@ -85,8 +85,6 @@ class KDN_loss(FairseqCriterion):
             ent_loss = ent_loss / n_entities
             loss = ent_loss + lm_loss if self.use_mlm else ent_loss
             
-            # loss = lm_loss
-
         sample_size = 1
         logging_output = {
             'loss': utils.item(loss.data),

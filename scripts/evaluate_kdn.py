@@ -13,7 +13,7 @@ from fairseq import checkpoint_utils, tasks, options
 from fairseq.tokenization import BertTokenizer
 import numpy as np
 
-data_path = "/private/home/xwhan/KBs/Wikidata/fact_completion/text_statement_tokenized.json"
+data_path = "/private/home/xwhan/KBs/Wikidata/fact_completion/text_statement_final.json"
 
 def debinarize_list(vocab, indices):
     return [vocab[idx] for idx in indices]
@@ -32,7 +32,7 @@ def bert_batcher(bert_tokenizer, pretext, ground, candidate_dict, task, bsz=1000
 
     for batch_id in range(0, candidate_lens, bsz):
         candidate_batch = candidate_texts[batch_id: batch_id + bsz]
-        labels = [int(c.strip().lower() == ground.strip().lower()) for c in candidate_batch]
+        labels = [int(c in ground) for c in candidate_batch]
         real_bsz = len(candidate_batch)
         lens = []
         inputs = np.full((real_bsz, max_len + pretext_len), 0)
@@ -57,6 +57,7 @@ def bert_batcher(bert_tokenizer, pretext, ground, candidate_dict, task, bsz=1000
         yield {'labels': labels, 'inputs': inputs, 'lens': lens, 'pretext_len': pretext_len, 'indexed_candidates': indexed_candidate, 'segments': segments, 'entity_masks': entity_masks}
 
 
+
 def _load_models(args, task):
     models, _model_args = checkpoint_utils.load_model_ensemble(
         args.model_path.split(':'), arg_overrides=vars(args)
@@ -66,7 +67,7 @@ def _load_models(args, task):
         model.eval()
     return models[0]
 
-def hits(label_and_scores, ks = [5,10], alpha=0):
+def hits(label_and_scores, ks = [1,5,10], alpha=0):
     ranked = sorted(label_and_scores, key=lambda x:x[1] + alpha*x[2], reverse=True)
     hits = {}
     for k in ks:
@@ -77,6 +78,7 @@ def hits(label_and_scores, ks = [5,10], alpha=0):
 
 def binarize_list(vocab, words):
     return [vocab.index(w) for w in words]
+
 
 def bert_eval(model, task, k=0):
     bert_tokenizer = BertTokenizer(os.path.join(
@@ -90,8 +92,15 @@ def bert_eval(model, task, k=0):
     tail_candidates = statements[rel]['candidates']
     tokenized_candidates = statements[rel]['tokenized_candidates']
 
-    tokenized_pretexts = [s['pretext_toks'] for s in statements[rel]['statements']]
-    true_tails = [s['answer'] for s in statements[rel]['statements']]
+    assert len(tail_candidates) == len(tokenized_candidates)
+
+    tokenized_pretexts = []
+    true_tails = []
+    for k, v in statements[rel]["combined_queries"].items():
+        tokenized_pretexts.append(v['pretext_toks'])
+        true_tails.append(v['answer'])
+    
+    print(f'num of candidates {len(tail_candidates)}')
 
     # tokenize all candidate
     candidate_dict = {}
@@ -131,8 +140,9 @@ def bert_eval(model, task, k=0):
                 rel_hits[k].append(v)
     for k in rel_hits.keys():
         metrics[rel][k] = np.mean(rel_hits[k])
-    print(f'{rel}', metrics[rel])
 
+    print("KDN Results:")
+    print(f'{rel}', metrics[rel])
     # print(f'\nresults:', metrics)
     return metrics
 
@@ -151,7 +161,8 @@ def pre_tokenize(path):
             answer_text = s['statement'].split('<o>')[1].strip()
             s['pretext_toks'] = tokenizer.tokenize(pretext)
             s['answer'] = answer_text
-    json.dump(fact_data, open('/private/home/xwhan/KBs/Wikidata/fact_completion/text_statement_tokenized.json', 'w'))
+    json.dump(fact_data, open('/private/home/xwhan/KBs/Wikidata/fact_completion/text_statement_tokenized_v2.json', 'w'))
+
 
 def main(args):
     task = tasks.setup_task(args)
@@ -160,12 +171,14 @@ def main(args):
     model.eval()
     model.cuda()
     bert_eval(model, task, args.rel_id)
+    # pre_tokenize("/private/home/xwhan/KBs/Wikidata/fact_completion/text_statement_ranked_by_mincount_v2.json")
 
 if __name__ == '__main__':
     parser = options.get_parser('Trainer', 'kdn')
     options.add_dataset_args(parser)
     parser.add_argument('--criterion', default='kdn_loss')
-    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt')
+    parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated',
+                        default='/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt')
     parser.add_argument('--rel-id', default=0, type=int, help="which relation to evaluate")
     args = options.parse_args_and_arch(parser)
     args = parser.parse_args()

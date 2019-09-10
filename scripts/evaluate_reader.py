@@ -307,7 +307,6 @@ def main(args):
     qid2results = defaultdict(list)
     qid2question = {} # for SQuAD analysis
 
-
     basic_tokenizer = BasicTokenizer(do_lower_case=True)
 
     print('Starting evaluation...')
@@ -400,7 +399,7 @@ def main(args):
     if args.save:
         save_path = os.path.join(args.save_name)
         with open(save_path, 'w') as g:
-            json.dump(analysis, g)
+            json.dump(qid2pred, g)
 
     f1_scores = [metric_max_over_ground_truths(f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
 
@@ -444,13 +443,13 @@ if __name__ == '__main__':
     parser.add_argument('--model-path', metavar='FILE', help='path(s) to model file(s), colon separated', default='/checkpoint/xwhan/2019-08-04/reader_ft.span_qa.mxup187500.adam.lr1e-05.bert.crs_ent.seed3.bsz8.ngpu1/checkpoint_best.pt')
 
     parser.add_argument(
-        '--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/valid_with_scores.json', type=str)
+        '--eval-data', default='/private/home/xwhan/dataset/WebQ/raw/test_with_scores_best.json', type=str)
     parser.add_argument(
-        '--answer-path', default='/private/home/xwhan/dataset/WebQ/raw/valid.json')
+        '--answer-path', default='/private/home/xwhan/dataset/WebQ/raw/test.json')
     parser.add_argument('--downsample', default=1.0, help='test on small portion of the data')
 
     # save the prediction file
-    parser.add_argument('--save-name', default='analysis.json')
+    parser.add_argument('--save-name', default='predictions.json')
     parser.add_argument('--eval-bsz', default=256, type=int)
     parser.add_argument('--save', action='store_true')
 

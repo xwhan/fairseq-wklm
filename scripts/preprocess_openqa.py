@@ -198,7 +198,7 @@ def process_raw_items(items, tokenizer):
             samples.append(sample)
     return samples
 
-def process_eval(data_name, split='valid'):
+def process_eval(data_name, split='test'):
     """
     process data for final QA evaluation
     """
@@ -231,7 +231,7 @@ def process_eval(data_name, split='valid'):
 
 if __name__ == "__main__":
     data_name = sys.argv[1]
+    process_eval(data_name)
     # read_data(data_name)
-    # process_eval(data_name)
 
-    read_data_for_ranking(data_name)
+    # read_data_for_ranking(data_name)

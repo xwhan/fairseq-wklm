@@ -203,8 +203,8 @@ def score(strict_acc, n_pred, n_true, n_corr, ma_p, ma_r, eval_size):
 if __name__ == '__main__':
     parser = options.get_training_parser('typing')
     parser.add_argument('--model-path', default='/checkpoint/xwhan/2019-08-12/re_marker_only_bert_large.re.adam.lr1e-05.bert_large.crs_ent.seed3.bsz4.maxlen256.drop0.2.ngpu8/checkpoint_best.pt')
-    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/FIGER/processed-splits/valid', type=str)
-    parser.add_argument('--eval-bsz', default=128, type=int)
+    parser.add_argument('--eval-data', default='/private/home/xwhan/dataset/FIGER/processed-splits/test', type=str)
+    parser.add_argument('--eval-bsz', default=64, type=int)
     args = options.parse_args_and_arch(parser)
 
     task = tasks.setup_task(args)
