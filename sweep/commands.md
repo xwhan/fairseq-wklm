@@ -103,6 +103,9 @@ python train.py --fp16 /checkpoint/xwhan/wiki_data_mlm --task kdn --arch kdn --s
 # sweep for kdn v2
 python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_v2 -p kdn_v2_mask0.01 -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
 
+
+python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_v2 -p kdn_no_mlm -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
+
 python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_v2 -p kdn_no_ent_mlm_max1m -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
 
 python sweep/sweep_ft_kdn.py -d /checkpoint/xwhan/wiki_data_v3 -p kdn_v3_boundary_continue -t -1 -g 8 -n 4 --tensorboard-logdir /checkpoint/xwhan/kdn
@@ -156,6 +159,8 @@ python scripts/evaluate_typing.py --arch typing /private/home/xwhan/dataset/FIGE
 
 
 ## OpenQA Experiments
+
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/quasart -p quasart_mask0.05 -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
 python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/quasart -p quasart_mask0.05 -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
 
