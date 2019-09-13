@@ -396,14 +396,20 @@ def main(args):
         print(f'f1 score {np.mean(f1_scores)}')
         print(f'em score {np.mean(em_scores)}')
 
+    qids = list(qid2pred.keys())
+    f1_scores = [metric_max_over_ground_truths(
+        f1_score, qid2pred[qid], qid2ground[qid]) for qid in qids]
+    em_scores = [metric_max_over_ground_truths(
+        exact_match_score, qid2pred[qid], qid2ground[qid]) for qid in qids]
+
+    for qid, f1, em in zip(qids, f1_scores, em_scores):
+        analysis[qid]['f1'] = f1
+        analysis[qid]['em'] = em
+
     if args.save:
         save_path = os.path.join(args.save_name)
         with open(save_path, 'w') as g:
-            json.dump(qid2pred, g)
-
-    f1_scores = [metric_max_over_ground_truths(f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
-
-    em_scores = [metric_max_over_ground_truths(exact_match_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
+            json.dump(analysis, g)
 
     print(f'f1 score {np.mean(f1_scores)}')
     print(f'em score {np.mean(em_scores)}')

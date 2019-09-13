@@ -181,7 +181,7 @@ def score(strict_acc, n_pred, n_true, n_corr, ma_p, ma_r, eval_size):
         if p == 0 or r == 0:
             return 0.0
         else:
-            return 2.0 * p * r / (p + r)
+            return 2 * p * r / float(p + r)
 
     strict_acc = strict_acc / eval_size
 
@@ -189,7 +189,7 @@ def score(strict_acc, n_pred, n_true, n_corr, ma_p, ma_r, eval_size):
         mi_p = n_corr / n_pred
     else:
         mi_p = 0
-    mi_r = n_corr /n_true
+    mi_r = n_corr / n_true
     mi_f1 = f1(mi_p, mi_r)
 
     ma_p = ma_p / eval_size
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     collate_fn = partial(collate, pad_idx=task.dictionary.pad(), num_class=task.num_class)
     dataloader = DataLoader(eval_dataset, batch_size=args.eval_bsz, collate_fn=collate, num_workers=20)
 
-    n_pred = n_true = n_corr = ma_p = ma_r = strict_acc = eval_size = 0
+    n_pred = n_true = n_corr = ma_p = ma_r = strict_acc = eval_size = 0.0
     with torch.no_grad():
         for batch_ndx, batch_data in enumerate(tqdm(dataloader)):
             batch_cuda = move_to_cuda(batch_data)
@@ -229,6 +229,7 @@ if __name__ == '__main__':
             assert type_probs.size(0) == targets.size(0)
             sample_size = type_probs.size(0)
             eval_size += sample_size
+
             for idx in range(sample_size):
                 pred_probs = type_probs[idx, :].tolist()
                 target = targets[idx, :]
@@ -241,15 +242,18 @@ if __name__ == '__main__':
                     if target[type_idx] == 1:
                         true_labels.append(type_idx)
 
-                strict_acc += set(predicted_labels) == set(true_labels)
-                n_pred += len(predicted_labels)
-                n_true += len(true_labels)
+
+                strict_acc += float(set(predicted_labels) == set(true_labels))
+                n_pred += len(set(predicted_labels))
+                n_true += len(set(true_labels))
                 n_corr += len(set(predicted_labels).intersection(set(true_labels)))
 
                 ma_p += len(set(predicted_labels).intersection(
-                    set(true_labels))) / float(len(predicted_labels))
+                    set(true_labels))) / float(len(set(predicted_labels)))
                 ma_r += len(set(predicted_labels).intersection(set(true_labels))
-                            ) / float(len(true_labels))
+                            ) / float(len(set(true_labels)))
+
+    import pdb;pdb.set_trace()
     
     print(f'evaluating {eval_size} examples with thresh {args.thresh}')
     score(strict_acc, n_pred, n_true, n_corr, ma_p, ma_r, eval_size)

@@ -20,32 +20,11 @@ def get_grid(args):
         hyperparam('--final-metric', 'start_acc'),
 
 
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-23/kdn_m2_k10_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-        #            save_dir_key=lambda val: f'kdn_m2_k10'),
-        # hyperparam("--use-kdn"),
-        # hyperparam('--boundary-loss'),
 
-
-        # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-08-23/kdn_v2_boundary_2layer.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-        #            save_dir_key=lambda val: f'kdn_v2_2layer'),
-        # hyperparam("--use-kdn"),
-        # hyperparam('--boundary-loss'),
-        # hyperparam("--add-layer"),
-        # hyperparam("--num-kdn", 2),
-
-
-
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-23/kdn_v2_boundary_continue.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-        #            save_dir_key=lambda val: f'kdn_v2_boundary_c'),
-        # hyperparam("--use-kdn"),
-        # hyperparam('--boundary-loss'),
-
-
-
-        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-        #            save_dir_key=lambda val: f'kdn_v2_boundary'),
-        # hyperparam("--use-kdn"),
-        # hyperparam('--boundary-loss'),
+        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+                   save_dir_key=lambda val: f'kdn_v2_boundary'),
+        hyperparam("--use-kdn"),
+        hyperparam('--boundary-loss'),
 
 
         # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',save_dir_key=lambda val: f'bert_best'),
@@ -57,21 +36,21 @@ def get_grid(args):
         # hyperparam('--boundary-loss'),
 
 
-        # masking ratio 0.05
-        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-                   save_dir_key=lambda val: f'kdn_v2_mask0.05'),
-        hyperparam("--use-kdn"),
-        hyperparam('--boundary-loss'),
+        # # masking ratio 0.05
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_v2_mask0.05'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
 
         hyperparam('--sentence-avg', True, binary_flag=True),
         hyperparam('--criterion', 'span_qa'),
         hyperparam('--seed', 3, save_dir_key=lambda val: f'seed{val}'),
         hyperparam('--skip-invalid-size-inputs-valid-test'),
-        hyperparam('--max-sentences', [8, 16], save_dir_key=lambda val: f'bsz{val}'),
+        # hyperparam('--max-sentences', [8, 16], save_dir_key=lambda val: f'bsz{val}'),
 
-        # hyperparam('--max-sentences', 32, save_dir_key=lambda val: f'bsz{val}'),
-        # hyperparam('--max-length', 128,
-        #            save_dir_key=lambda val: f'mlen{val}'),
+        hyperparam('--max-sentences', 32, save_dir_key=lambda val: f'bsz{val}'),
+        hyperparam('--max-length', 128,
+                   save_dir_key=lambda val: f'mlen{val}'),
 
         hyperparam('--log-format', 'json'),
         hyperparam('--log-interval', 1000),

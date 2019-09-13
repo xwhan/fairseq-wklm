@@ -138,8 +138,10 @@ def bert_eval(model, task, k=0):
             item_hits = hits(label_and_scores)
             for k, v in item_hits.items():
                 rel_hits[k].append(v)
+
     for k in rel_hits.keys():
-        metrics[rel][k] = np.mean(rel_hits[k])
+        metrics[rel][k] = {"avg": np.mean(
+            rel_hits[k]), "std": np.std(rel_hits[k])}
 
     print("KDN Results:")
     print(f'{rel}', metrics[rel])
