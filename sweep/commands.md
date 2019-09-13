@@ -229,3 +229,11 @@ python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/da
 python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-12/unftriviaqa_ablation.span_qa.adam.lr1e-05.bert_mlm_ablation.seed3.bsz32.mlen128.ldrop0.1.ngpu1/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json
 
 
+
+# TODO
+### spanqa analysis
+python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/datasets/xxx -p unftriviaqa_mask0.05 -t -1 -g 1 -n 1 --tensorboard-logdir /checkpoint/xwhan/spanqa
+
+### Typing evaluation check
+
+python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/ontonotes -p onto_base_marker -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing

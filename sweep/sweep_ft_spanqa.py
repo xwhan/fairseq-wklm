@@ -20,16 +20,16 @@ def get_grid(args):
         hyperparam('--final-metric', 'start_acc'),
 
 
-
+        # mask 0.15
         hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
                    save_dir_key=lambda val: f'kdn_v2_boundary'),
         hyperparam("--use-kdn"),
         hyperparam('--boundary-loss'),
 
-
+        # bert base
         # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-05-28/masked-lm-rand.st512.mt4096.uf1.bert_base.dr0.1.atdr0.1.actdr0.1.wd0.01.adam.beta998.clip1.0.clip6e-06.lr0.0001.warm10000.fp16.mu3000000.seed1.ngpu32/checkpoint_best.pt',save_dir_key=lambda val: f'bert_best'),
 
-
+        # 1M MLMs
         # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-09-03/kdn_no_ent_mlm_max1m.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_36_1000000.pt',
         #            save_dir_key=lambda val: f'bert_mlm_ablation'),
         # hyperparam("--use-kdn"),
@@ -39,6 +39,10 @@ def get_grid(args):
         # # masking ratio 0.05
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
         #            save_dir_key=lambda val: f'kdn_v2_mask0.05'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
+
+        # TODO no MLM ablation
         # hyperparam("--use-kdn"),
         # hyperparam('--boundary-loss'),
 
