@@ -294,6 +294,7 @@ def main(args):
     # process_raw("/private/home/xwhan/dataset/triviaqa/raw/valid_with_scores_best.json", task.tokenizer,
     #             "/private/home/xwhan/dataset/triviaqa/raw/valid_eval.json")
     # assert False
+    args.bert_path=args.model_path
 
     model = _load_models(args, task)
     model.half()
@@ -380,7 +381,7 @@ def main(args):
             qid2ground[line['qid']] = line['answer']
             analysis[line['qid']] = {"gold": line['answer'], "pred": qid2results[line['qid']][0], 'q': qid2question[line['qid']]['q'], 'c': qid2question[line['qid']]['c']}
 
-    print(f'how many evaluation data: {len(qid2ground)}')
+    #print(f'how many evaluation data: {len(qid2ground)}')
     
     # save the predictions for tuninng
     for alpha in list(np.arange(0, 0.200, 0.005)) + [1]:
@@ -392,9 +393,9 @@ def main(args):
             f1_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
         em_scores = [metric_max_over_ground_truths(
             exact_match_score, qid2pred[qid], qid2ground[qid]) for qid in qid2pred.keys()]
-        print(f'Alpha: {alpha}')
-        print(f'f1 score {np.mean(f1_scores)}')
-        print(f'em score {np.mean(em_scores)}')
+    #    print(f'Alpha: {alpha}')
+    #    print(f'f1 score {np.mean(f1_scores)}')
+    #    print(f'em score {np.mean(em_scores)}')
 
     qids = list(qid2pred.keys())
     f1_scores = [metric_max_over_ground_truths(

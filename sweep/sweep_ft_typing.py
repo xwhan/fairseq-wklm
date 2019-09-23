@@ -40,13 +40,26 @@ def get_grid(args):
         # hyperparam("--use-kdn"),
         # hyperparam("--boundary-loss"),
 
+        # hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-09-03/kdn_no_ent_mlm_max1m.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_36_1000000.pt',
+        #            save_dir_key=lambda val: f'bert_mlm_ablation'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
+
 
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_best.pt',save_dir_key=lambda val: f'kdn_best'),
 
         # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-07/kdn_start_end.adam.bert.crs_ent.seed3.bsz8.0.01.lr1e-05.beta998.warmup10000.ngpu16/checkpoint_last.pt', save_dir_key=lambda val: f'kdn_last'),
 
-        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
-                   save_dir_key=lambda val: f'kdn_v2_mask0.05'),
+        # hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-29/kdn_v2_mask0.05.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #            save_dir_key=lambda val: f'kdn_v2_mask0.05'),
+        # hyperparam("--use-kdn"),
+        # hyperparam('--boundary-loss'),
+
+        # mask 0.15
+        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+                   save_dir_key=lambda val: f'kdn_no_mlm'),
+        #hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-09-12/kdn_no_mlm.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        #           save_dir_key=lambda val: f'kdn_no_mlm'),
         hyperparam("--use-kdn"),
         hyperparam('--boundary-loss'),
 

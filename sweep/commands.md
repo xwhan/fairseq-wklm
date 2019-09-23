@@ -172,11 +172,15 @@ python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/FIGER -p figer_ba
 
 python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/FIGER -p figer_kdn_marker -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing
 
+python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/FIGER -p figer_mask0.15 -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing
+
+python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/FIGER -p figer_ablation -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing
+
 python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/ontonotes -p Ontonotes_base_marker -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing
 
 python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/ontonotes -p Ontonotes_kdn_marker -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing
 
-python scripts/evaluate_typing.py --arch typing /private/home/xwhan/dataset/FIGER --model-path /checkpoint/xwhan/2019-09-12/figer_kdn_marker.typing.adam.lr2e-05.kdn_v2_mask0.05.seed3.maxsent16.maxlen256.drop0.1.ngpu16/checkpoint_best.pt --use-marker --eval-data /private/home/xwhan/dataset/FIGER/processed-splits/test --thresh 0.5 --use-kdn --boundary-loss
+python scripts/evaluate_typing.py --arch typing /private/home/xwhan/dataset/FIGER --model-path /checkpoint/xwhan/2019-09-12/figer_kdn_marker.typing.adam.lr2e-05.kdn_v2_mask0.05.seed3.maxsent16.maxlen256.drop0.1.ngpu16/checkpoint_best.pt --use-marker --eval-data /private/home/xwhan/dataset/FIGER/processed-splits/test --thresh 0.6 --use-kdn --boundary-loss
 
 
 ## OpenQA Experiments
@@ -224,7 +228,7 @@ python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/da
 
 python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-03/unftriviaqa_mask0.05.span_qa.adam.lr5e-06.kdn_v2_mask0.05.seed3.bsz32.bsz128.ldrop0.1.ngpu4/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json
 
-python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-12/unftriviaqa_mask0.05.span_qa.adam.lr5e-06.kdn_v2_mask0.05.seed3.bsz32.mlen128.ldrop0.2.ngpu1/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json
+python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-12/unftriviaqa_mask0.15.span_qa.adam.lr5e-06.kdn_v2_boundary.seed3.bsz32.mlen128.ldrop0.2.ngpu1/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json
 
 python scripts/evaluate_reader.py /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa --model-path /checkpoint/xwhan/2019-09-12/unftriviaqa_ablation.span_qa.adam.lr1e-05.bert_mlm_ablation.seed3.bsz32.mlen128.ldrop0.1.ngpu1/checkpoint_best.pt --arch span_qa --eval-data /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json --answer-path  /private/home/xwhan/DrQA/data/datasets/data/datasets/unftriviaqa/valid_eval_with_scores.json
 
@@ -237,3 +241,5 @@ python sweep/sweep_ft_spanqa.py -d /private/home/xwhan/DrQA/data/datasets/data/d
 ### Typing evaluation check
 
 python sweep/sweep_ft_typing.py -d /private/home/xwhan/dataset/ontonotes -p onto_base_marker -t -1 -g 8 -n 2 --tensorboard-logdir /checkpoint/xwhan/typing
+
+

@@ -253,7 +253,7 @@ if __name__ == '__main__':
                 ma_r += len(set(predicted_labels).intersection(set(true_labels))
                             ) / float(len(set(true_labels)))
 
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     
     print(f'evaluating {eval_size} examples with thresh {args.thresh}')
     score(strict_acc, n_pred, n_true, n_corr, ma_p, ma_r, eval_size)

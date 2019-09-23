@@ -21,7 +21,7 @@ def get_grid(args):
 
 
         # mask 0.15
-        hyperparam('--bert-path', '/checkpoint/xwhan/2019-08-16/kdn_v2_boundary.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
+        hyperparam('--bert-path', '/checkpoint/jingfeidu/2019-09-12/kdn_no_mlm.adam.bert.crs_ent.seed3.bsz4.0.01.lr1e-05.ngpu32/checkpoint_best.pt',
                    save_dir_key=lambda val: f'kdn_v2_boundary'),
         hyperparam("--use-kdn"),
         hyperparam('--boundary-loss'),
@@ -43,8 +43,8 @@ def get_grid(args):
         # hyperparam('--boundary-loss'),
 
         # TODO no MLM ablation
-        # hyperparam("--use-kdn"),
-        # hyperparam('--boundary-loss'),
+        hyperparam("--use-kdn"),
+        hyperparam('--boundary-loss'),
 
         hyperparam('--sentence-avg', True, binary_flag=True),
         hyperparam('--criterion', 'span_qa'),
